@@ -1,6 +1,6 @@
 import { CoinJson } from "@incentum/praxis-interfaces"
 
-export interface GovForm {
+export interface GovCommon {
   name: string
   title: string
   subtitle: string
@@ -11,10 +11,21 @@ export interface GovForm {
   createProposalFee: number
 }
 
+export interface GovForm extends GovCommon {
+}
+
+export interface GovDoc extends GovCommon {
+  id: string
+  docType: string
+  owner: string
+}
+
 export interface GovState {
+  id: string
   orgs: number
   votes: number
   proposals: number
+  members: number
   name: string
   space: string
   owner: string
@@ -30,12 +41,12 @@ export interface GovState {
 }
 
 export interface OrgCommon {
+  name: string
   title: string
   subtitle: string
   description: string
   symbol: string
   decimals: number
-  joinStake: number
   joinFee: number
   joinTokens: number
 }
@@ -49,13 +60,92 @@ export interface OrgDoc extends OrgCommon {
   owner: string
 }
 
+export interface ProposalCommon {
+  name: string
+  title: string
+  subtitle: string
+  description: string
+}
+
+export interface ProposalForm extends ProposalCommon {
+}
+
+export interface ProposalDoc extends ProposalCommon {
+  id: string
+  docType: string
+  owner: string
+}
+
+export enum VoteTypes {
+  majority = 'majority',
+  quadratic = 'quadratic',
+}
+
+export interface VoteProposalCommon {
+  name: string
+  title: string
+  subtitle: string
+  description: string
+  orgId: string
+  proposalId: string
+  minVoters: number
+  maxVoters: number
+  stake: number
+}
+
+export interface VoteProposalForm extends VoteProposalCommon {
+  voteStart: string
+  voteEnd: string
+  voteType: VoteTypes
+}
+
+export interface VoteProposalDoc extends VoteProposalCommon {
+  id: string
+  docType: string
+  owner: string
+  voteStart: number
+  voteEnd: number
+  voteType: string
+}
+
+export interface MemberCommon {
+  title: string
+  subtitle: string
+  description: string
+  orgId: string
+}
+
+export interface MemberForm extends MemberCommon {
+}
+
+export interface MemberDoc extends MemberCommon {
+  id: string
+  docType: string
+  owner: string
+}
+
+export interface VoteCommon {
+  voteProposalId: string
+  memberId: string
+  votes: number
+  vote: string
+}
+
+export interface VoteForm extends VoteCommon {
+}
+
+export interface VoteDoc extends VoteCommon {
+  docType: string
+  owner: string
+}
+
 export enum DocTypes {
   Gov = 'praxis-governance',
   Org = 'praxis-organization',
   Proposal = 'praxis-proposal',
-  Vote = 'praxis-vote',
+  VoteProposal = 'praxis-vote-proposal',
   Member = 'praxis-member',
-  Voter = 'praxis-voter',
+  Vote = 'praxis-vote',
 }
 
 export const fields =
@@ -63,6 +153,7 @@ export const fields =
 {
   /* common fields */
   'id': $x.fields.keywordField,
+  'name': $x.fields.keywordField,
   'title': $x.fields.whitespaceTextField,
   'subtitle': $x.fields.whitespaceTextField,
   'description': $x.fields.whitespaceTextField,
@@ -85,17 +176,22 @@ export const fields =
 
   /* proposal document */
 
-  /* vote document */
-  'voteId':$x.fields.keywordField,
+  /* vote proposal document */
+  'voteProposalId':$x.fields.keywordField,
   'orgId': $x.fields.keywordField,
   'proposalId': $x.fields.keywordField,
   'minVoters': $x.fields.longField,
   'maxVoters': $x.fields.longField,
   'voteStart': $x.fields.longField,
   'voteEnd': $x.fields.longField,
-  /* joinFee, joinStake */
+  'stake': $x.fields.longField,
+  'voteType': $x.fields.keywordField,
 
-  /* voter document */
-  'memberId': $x.fields.keywordField
+  /* member document */
+  'memberId': $x.fields.keywordField,
+
+  /* vote document */
+  'vote': $x.fields.keywordField,
+  'votes': $x.fields.longField
 }
 `

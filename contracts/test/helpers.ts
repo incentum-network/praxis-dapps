@@ -1,6 +1,7 @@
 import { uniqueKey, ActionJson, OutputJson, TemplateJson } from '@incentum/praxis-interfaces'
 import { startConnection, ConnectionOptions, extensions } from '@incentum/praxis-db';
 import { InputJson, inputFromOutput } from '@incentum/praxis-contracts';
+import { Hits } from '@incentum/praxis-spaces';
 
 let x: any
 export const setExtensions = (contractHash, contractKey, contexts, timestamp: number): any => {
@@ -47,6 +48,53 @@ export async function dropAndCreate() {
 export async function deleteSpace(context: any, space: string) {
   try {
     await context.functions.deleteSpace(space)
+  } catch (e) {
+  }
+}
+
+export async function findDocumentById(context: any, space: string, id: string, docType: string, retrieveFields: string[], log: boolean = false) {
+  try {
+    const queryText = `id:"${id}" docType:"${docType}"`
+    const query = {
+      queryParser: {
+        class: 'classic',
+        defaultOperator: 'and',
+        defaultField: 'id',
+      },
+      retrieveFields,
+      queryText,
+    }
+    const { error, hits, e}: { error: boolean, hits: Hits, e?: any} = await context.functions.searchSpace(space, query)
+    if (error) {console.log('findDocumentById error', e)}
+    const doc = hits.totalHits > 0 ? hits.hits[0].fields : undefined
+    if (log) {
+      console.log('findDocumentById hits', hits)
+      console.log('findDocumentById doc', doc)
+    }
+    return doc
+  } catch (e) {
+  }
+}
+
+export async function findDocumentByQueryText(context: any, space: string, queryText: string, retrieveFields: string[], log: boolean = false) {
+  try {
+    const query = {
+      queryParser: {
+        class: 'classic',
+        defaultOperator: 'and',
+        defaultField: 'id',
+      },
+      retrieveFields,
+      queryText,
+    }
+    const { error, hits, e}: { error: boolean, hits: Hits, e?: any} = await context.functions.searchSpace(space, query)
+    if (error) {console.log('findDocumentByQueryText error', e)}
+    const doc = hits.totalHits > 0 ? hits.hits[0].fields : undefined
+    if (log) {
+      console.log('findDocumentById hits', hits)
+      console.log('findDocumentById doc', doc)
+    }
+    return doc
   } catch (e) {
   }
 }
