@@ -98,3 +98,17 @@ export async function findDocumentByQueryText(context: any, space: string, query
   } catch (e) {
   }
 }
+
+export async function findDocumentByQuery(context: any, space: string, query: any, log: boolean = false) {
+  try {
+    const { error, hits, e}: { error: boolean, hits: Hits, e?: any} = await context.functions.searchSpace(space, query)
+    if (error) {console.log('findDocumentByQuery error', e)}
+    const doc = hits.totalHits > 0 ? hits.hits[0].fields : undefined
+    if (log) {
+      console.log('findDocumentById hits', hits)
+      console.log('findDocumentById doc', doc)
+    }
+    return doc
+  } catch (e) {
+  }
+}

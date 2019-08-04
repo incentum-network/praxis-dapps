@@ -191,7 +191,14 @@ export const fields =
   'memberId': $x.fields.keywordField,
 
   /* vote document */
-  'vote': $x.fields.keywordField,
+  'vote': {
+    'type': 'text', 
+    'search': false,
+    'facet': 'flat', 
+    'group': true,
+    'store': true,
+    'facetIndexFieldName': 'facet_vote'
+  },
   'votes': $x.fields.longField
 }
 `

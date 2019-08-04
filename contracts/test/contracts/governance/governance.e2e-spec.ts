@@ -11,7 +11,7 @@ import {
 import { saveTemplate, startContract, contractAction, getUnusedOutputs } from '@incentum/praxis-db'
 import { uniqueKey, Template, inputFromOutput } from '@incentum/praxis-contracts';
 import { spaceExtensionContext, setRootDir, setDevEnv, Commit } from '@incentum/praxis-spaces';
-import { dropAndCreate, deleteSpace, setExtensions, findDocumentById, findDocumentByQueryText } from '../../helpers'
+import { dropAndCreate, deleteSpace, setExtensions, findDocumentById, findDocumentByQueryText, findDocumentByQuery } from '../../helpers'
 import { createAction } from '../../../src/helpers'
 
 import { template as govTemplateFunc } from '../../../src/governance'
@@ -471,9 +471,24 @@ describe('governance e2e', async () => {
       voteState = omit((result.action as any).state.state, '_stateSpace')
 
       const queryText = `memberId:"${memberId}" voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
-      const doc = await findDocumentByQueryText(context, space, queryText,
-        ['id', 'docType', 'owner', 'vote', 'votes', 'memberId', 'voteProposalId']
-      )
+      // const doc = await findDocumentByQueryText(context, space, queryText,
+      //  ['id', 'docType', 'owner', 'vote', 'votes', 'memberId', 'voteProposalId']
+      // )
+      const query = {
+        facets: [
+          { dim: 'vote', topN: 10 },
+        ],
+        queryParser: {
+          class: 'classic',
+          defaultOperator: 'and',
+          defaultField: 'id',
+        },
+        retrieveFields: ['id', 'docType', 'owner', 'vote', 'votes', 'memberId', 'voteProposalId'],
+        queryText,
+      }
+      const doc = await findDocumentByQuery(context, space, query)
+      console.log('doc', doc)
+
       const voteDoc: VoteDoc = {
         memberId,
         voteProposalId,
