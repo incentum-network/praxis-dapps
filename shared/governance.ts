@@ -76,6 +76,11 @@ export interface ProposalDoc extends ProposalCommon {
   owner: string
 }
 
+export enum VoteValue {
+  for = 'for',
+  against = 'against',
+}
+
 export enum VoteTypes {
   majority = 'majority',
   quadratic = 'quadratic',
@@ -139,6 +144,12 @@ export interface VoteDoc extends VoteCommon {
   owner: string
 }
 
+export interface VoteResultForm {
+  title: string
+  maxVoters: number
+  voteProposalId: string
+}
+
 export enum DocTypes {
   Gov = 'praxis-governance',
   Org = 'praxis-organization',
@@ -193,7 +204,7 @@ export const fields =
   /* vote document */
   'vote': {
     'type': 'text', 
-    'search': false,
+    'search': true,
     'facet': 'flat', 
     'group': true,
     'store': true,

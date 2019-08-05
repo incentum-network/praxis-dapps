@@ -28,21 +28,27 @@ const defaultOpts: ConnectionOptions = {
 }
 
 export async function dropAndCreate() {
-  const conn = await startConnection(defaultOpts)
-  const queryRunner = conn.createQueryRunner()
   try {
-    if (await queryRunner.hasDatabase(testDatabase)) {
-      await queryRunner.dropDatabase(testDatabase)
-      await queryRunner.createDatabase(testDatabase)
-    } else {
-      await queryRunner.createDatabase(testDatabase)
+    const conn = await startConnection(defaultOpts)
+    const queryRunner = conn.createQueryRunner()
+    try {
+      if (await queryRunner.hasDatabase(testDatabase)) {
+        await queryRunner.dropDatabase(testDatabase)
+        await queryRunner.createDatabase(testDatabase)
+      } else {
+        await queryRunner.createDatabase(testDatabase)
+      }
+    } catch (e) {
+      console.log('dropAndCreate error', e)
+    } finally {
+      await queryRunner.release()
+      await conn.close()
     }
+    await startConnection(defaultOpts)
   } catch (e) {
-  } finally {
-    await queryRunner.release()
-    await conn.close()
+    console.log('dropAndCreate error', e)
+    throw e
   }
-  await startConnection(defaultOpts)
 }
 
 export async function deleteSpace(context: any, space: string) {
@@ -99,16 +105,17 @@ export async function findDocumentByQueryText(context: any, space: string, query
   }
 }
 
-export async function findDocumentByQuery(context: any, space: string, query: any, log: boolean = false) {
+export async function findByQuery(context: any, space: string, query: any, log: boolean = false): Promise<Hits | undefined> {
   try {
     const { error, hits, e}: { error: boolean, hits: Hits, e?: any} = await context.functions.searchSpace(space, query)
-    if (error) {console.log('findDocumentByQuery error', e)}
-    const doc = hits.totalHits > 0 ? hits.hits[0].fields : undefined
-    if (log) {
-      console.log('findDocumentById hits', hits)
-      console.log('findDocumentById doc', doc)
+    if (error) {
+      console.log('findDocumentByQuery error', e)
+      return undefined
     }
-    return doc
+    if (log) {
+      console.log('findByQuery hits', hits)
+    }
+    return hits
   } catch (e) {
   }
 }

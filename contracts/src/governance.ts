@@ -1,6 +1,6 @@
 import { createTemplate } from './helpers';
 import { TemplateJson } from '@incentum/praxis-interfaces';
-import { DocTypes, fields } from './shared/governance'
+import { DocTypes, fields, VoteValue } from './shared/governance'
 
 export const start =
 `
@@ -245,7 +245,7 @@ export const joinOrg =
 export const vote =
 `
 (
-  $x.assert.include(['for','against'], $form.vote, 'invalid vote');
+  $x.assert.include(['${VoteValue.for}','${VoteValue.against}'], $form.vote, 'invalid vote');
 
   /* find vote proposal */
   $query := {
@@ -255,12 +255,14 @@ export const vote =
       'defaultField': 'id'
     },
     'queryText': 'id:"' & $form.voteProposalId & '" docType:"${DocTypes.VoteProposal}"',
-    'retrieveFields': ['id', 'stake', 'orgId', 'proposalId']
+    'retrieveFields': ['id', 'stake', 'orgId', 'proposalId', 'voteStart', 'voteEnd']
   };
   $find := $searchSpace($state.space, $query);
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
   $x.assert.equal($find.hits.totalHits, 1, 'vote proposal not found');
   $voteProposal := $find.hits.hits[0].fields;
+  $x.assert.isAtLeast($x.now, $voteProposal.voteStart);
+  $x.assert.isBelow($x.now, $voteProposal.voteEnd);
 
   /* find org */
   $query := {
@@ -338,6 +340,50 @@ export const vote =
 )
 `
 
+export const getVoteResult =
+`
+(
+  $x.assert.isAtLeast($form.maxVoters, 10, 'invalid maxVoters');
+  $queryText := 'voteProposalId:"' & $form.voteProposalId & '" docType:"${DocTypes.Vote}"';
+  $query := {
+    'facets': [
+      { 'dim': 'vote', 'topN': 10 }
+    ],
+    'queryParser': {
+      'class': 'classic',
+      'defaultOperator': 'and',
+      'defaultField': 'id'
+    },
+    'topHits': $form.maxVoters,
+    'retrieveFields': ['vote', 'votes'],
+    'queryText': $queryText
+  };
+  $find := $searchSpace($state.space, $query);
+  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
+
+  $reducer := function($r, $v) {
+    (
+      $vote := $v.fields.vote;
+      $votes := $v.fields.votes;
+      $vote = 'for' ? ({ 'for': $r.for + $votes, 'against': $r.against }) : ({ 'for': $r.for, 'against': $r.against + $votes})
+    )
+  };
+  $results := $reduce($find.hits.hits, $reducer, { 'for': 0, 'against': 0 });
+
+  /* Need to implement associated values in facets so we don't have to retrieve all documents
+  $facetHit := $find.hits.facets[0];
+  $vfor := $filter($facetHit.counts, function($v) { $v[0] = 'for' });
+  $vagainst := $filter($facetHit.counts, function($v) { $v[0] = 'against' });
+  $ifor := $vfor ? $vfor[1] : 0;
+  $iagainst := $vagainst ? $vagainst[1] : 0;
+  */
+
+  $subtitle := 'for ' & $results.for & ', against ' & $results.against;
+  $out := $x.output($action.ledger, [],  $form.title, $subtitle, '', $action.tags, $results);
+  $x.result($state, [$out])
+)
+`
+
 export const listOrgs =
 `
 (
@@ -374,12 +420,6 @@ export const getVoteProposal =
 )
 `
 
-export const getVote =
-`
-(
-)
-`
-
 export const template = (ledger): TemplateJson => createTemplate('incentum-governance', ledger,
 [
   {
@@ -410,6 +450,11 @@ export const template = (ledger): TemplateJson => createTemplate('incentum-gover
   {
     type: 'vote',
     code: vote,
+    language: 'jsonata',
+  },
+  {
+    type: 'getVoteResult',
+    code: getVoteResult,
     language: 'jsonata',
   },
 ]
