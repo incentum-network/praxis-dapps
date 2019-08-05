@@ -92,6 +92,7 @@ export const createOrg =
   $doc := {
     'id': $id,
     'name': $form.name,
+    'govId': $x.contractKey,
     'docType': '${DocTypes.Org}',
     'owner': $action.ledger,
     'title': $form.title,
@@ -129,6 +130,7 @@ export const createProposal =
   $doc := {
     'docType': '${DocTypes.Proposal}',
     'id': $id,
+    'govId': $x.contractKey,
     'owner': $action.ledger,
     'name': $form.name,
     'title': $form.title,
@@ -169,6 +171,7 @@ export const createVoteProposal =
   $doc := {
     'id': $id,
     'docType': '${DocTypes.VoteProposal}',
+    'govId': $x.contractKey,
     'owner': $action.ledger,
     'title': $form.title,
     'subtitle': $form.subtitle,
@@ -201,7 +204,7 @@ export const joinOrg =
       'defaultOperator': 'and',
       'defaultField': 'id'
     },
-    'queryText': 'id:"' & $form.orgId & '" docType:"${DocTypes.Org}"',
+    'queryText': 'govId:"' & $x.contractKey & '" id:"' & $form.orgId & '" docType:"${DocTypes.Org}"',
     'retrieveFields': ['id', 'joinFee', 'joinTokens', 'decimals', 'symbol']
   };
   $find := $searchSpace($state.space, $query);
@@ -226,6 +229,7 @@ export const joinOrg =
   $doc := {
     'docType': '${DocTypes.Member}',
     'id': $id,
+    'govId': $x.contractKey,
     'orgId': $org.id,
     'owner': $action.ledger,
     'title': $form.title,
@@ -254,7 +258,7 @@ export const vote =
       'defaultOperator': 'and',
       'defaultField': 'id'
     },
-    'queryText': 'id:"' & $form.voteProposalId & '" docType:"${DocTypes.VoteProposal}"',
+    'queryText': 'govId:"' & $x.contractKey & '" id:"' & $form.voteProposalId & '" docType:"${DocTypes.VoteProposal}"',
     'retrieveFields': ['id', 'stake', 'orgId', 'proposalId', 'voteStart', 'voteEnd']
   };
   $find := $searchSpace($state.space, $query);
@@ -271,7 +275,7 @@ export const vote =
       'defaultOperator': 'and',
       'defaultField': 'id'
     },
-    'queryText': 'id:"' & $voteProposal.orgId & '" docType:"${DocTypes.Org}"',
+    'queryText': 'govId:"' & $x.contractKey & '" id:"' & $voteProposal.orgId & '" docType:"${DocTypes.Org}"',
     'retrieveFields': ['id', 'decimals', 'symbol']
   };
   $findOrg := $searchSpace($state.space, $query);
@@ -286,7 +290,7 @@ export const vote =
       'defaultOperator': 'and',
       'defaultField': 'id'
     },
-    'queryText': 'orgId:"' & $org.id & '" docType:"${DocTypes.Member}"' & ' owner:"' & $action.ledger & '"',
+    'queryText': 'govId:"' & $x.contractKey & '" orgId:"' & $org.id & '" docType:"${DocTypes.Member}"' & ' owner:"' & $action.ledger & '"',
     'retrieveFields': ['id']
   };
   $findMember := $searchSpace($state.space, $query);
@@ -326,6 +330,7 @@ export const vote =
   /* add vote */
   $doc := {
     'docType': '${DocTypes.Vote}',
+    'govId': $x.contractKey,
     'memberId': $member.id,
     'voteProposalId': $voteProposal.id,
     'owner': $action.ledger,
@@ -344,7 +349,7 @@ export const getVoteResult =
 `
 (
   $x.assert.isAtLeast($form.maxVoters, 10, 'invalid maxVoters');
-  $queryText := 'voteProposalId:"' & $form.voteProposalId & '" docType:"${DocTypes.Vote}"';
+  $queryText := 'govId:"' & $x.contractKey & '" voteProposalId:"' & $form.voteProposalId & '" docType:"${DocTypes.Vote}"';
   $query := {
     'facets': [
       { 'dim': 'vote', 'topN': 10 }
@@ -387,6 +392,34 @@ export const getVoteResult =
 export const listOrgs =
 `
 (
+  $x.assert.isAtLeast($form.max, 1, 'invalid max');
+  $queryText := 'govId:"' & $x.contractKey & '" docType:"${DocTypes.Org}"';
+  $query := {
+    'queryParser': {
+      'class': 'classic',
+      'defaultOperator': 'and',
+      'defaultField': 'id'
+    },
+    'topHits': $form.max,
+    'retrieveFields': [
+      'id',
+      'name',
+      'owner',
+      'title',
+      'subtitle',
+      'description',
+      'symbol',
+      'decimals',
+      'joinFee',
+      'joinTokens'
+    ],
+    'queryText': $queryText
+  };
+  $find := $searchSpace($state.space, $query);
+  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
+
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
+  $x.result($state, [$out])
 )
 `
 
@@ -455,6 +488,11 @@ export const template = (ledger): TemplateJson => createTemplate('incentum-gover
   {
     type: 'getVoteResult',
     code: getVoteResult,
+    language: 'jsonata',
+  },
+  {
+    type: 'listOrgs',
+    code: listOrgs,
     language: 'jsonata',
   },
 ]

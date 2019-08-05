@@ -472,7 +472,7 @@ describe('governance e2e', async () => {
       const result = await contractAction(action, timestamp)
       voteState = omit((result.action as any).state.state, '_stateSpace')
 
-      const queryText = `voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
+      const queryText = `govId:"${startContractKey}" voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
       const query = {
         facets: [
           { dim: 'vote', topN: 10 },
@@ -528,7 +528,7 @@ describe('governance e2e', async () => {
       const result = await contractAction(action, timestamp)
       voteState = omit((result.action as any).state.state, '_stateSpace')
 
-      const queryText = `voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
+      const queryText = `govId:"${startContractKey}" voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
       const query = {
         facets: [
           { dim: 'vote', topN: 10 },
@@ -582,6 +582,32 @@ describe('governance e2e', async () => {
       expect(resout).toBeTruthy()
       expect(resout.subtitle).toBe('for 1, against 1')
       expect(resout.data).toEqual({ for: 1, against: 1})
+
+    } catch (e) {
+      console.log('error in contract e2e', e)
+      expect(true).toEqual(false)
+    }
+
+  });
+
+  it('list orgs', async () => {
+
+    if (!contractHash) { return }
+
+    try {
+      const form = {
+        max: 1000,
+        title: 'list orgs title',
+        subtitle: 'list orgs subtitle',
+      }
+      const action = createAction(ledger, contractHash, 'listOrgs', form);
+      const result = await contractAction(action, timestamp)
+
+      const outputs = await getUnusedOutputs({ledger})
+      const resout = outputs.outputs.find((o) => o.title === form.title)
+      expect(resout).toBeTruthy()
+      expect(resout.data.length).toEqual(1)
+      expect(resout.data[0].fields.title).toEqual('create org title')
 
     } catch (e) {
       console.log('error in contract e2e', e)

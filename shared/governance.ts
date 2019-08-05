@@ -171,6 +171,7 @@ export const fields =
   'docType': $x.fields.keywordField,
   'owner': $x.fields.keywordField,
   'version': $x.fields.longField,
+  'govId': $x.fields.keywordField,
 
   /* gov document */
   'space': $x.fields.keywordField,
