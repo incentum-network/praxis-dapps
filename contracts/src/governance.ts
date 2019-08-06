@@ -78,14 +78,8 @@ export const createOrg =
   $x.notNegative($form.joinTokens);
   $x.assert.isOk($form.name, 'name is required');
   $x.assert.isOk($form.symbol, 'symbol is required');
-
   $x.assert.equal($count($inputs), 1, 'only one input is allowed');
-  $i := $inputs[0];
-  $o := $i.output;
-  $x.assert.equal($count($o.coins), 1, 'must only have one coin');
-  $coin := $o.coins[0];
-  $x.assert.isTrue($x.coin.same($coin, $state.createOrgFee), 'coin must be PRAX');
-  $x.assert.equal($coin.amount, $state.createOrgFee.amount, 'you must send exactly ' & $x.toDisplay($state.createOrgFee) & ' PRAX');
+  $inputMustBe($inputs[0], $state.createOrgFee);
 
   $idx := $state.orgs;
   $id := $state.name & '/org/' & $idx;
@@ -105,10 +99,7 @@ export const createOrg =
   };
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
-  $newstate := {
-    'orgs': $idx + 1
-  };
-  $retstate := $merge([$state, $newstate]);
+  $retstate := $merge([$state, { 'orgs': $idx + 1 }]);
   $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags);
   $x.result($retstate, [$out])
 )
@@ -118,12 +109,7 @@ export const createProposal =
 `
 (
   $x.assert.equal($count($inputs), 1, 'only one input is allowed');
-  $i := $inputs[0];
-  $o := $i.output;
-  $x.assert.equal($count($o.coins), 1, 'must only have one coin');
-  $coin := $o.coins[0];
-  $x.assert.isTrue($x.coin.same($coin, $state.createProposalFee), 'coin must be PRAX');
-  $x.assert.equal($coin.amount, $state.createProposalFee.amount, 'you must send exactly ' & $x.toDisplay($state.createProposalFee) & ' PRAX');
+  $inputMustBe($inputs[0], $state.createProposalFee);
 
   $idx := $state.proposals;
   $id := $state.name & '/proposal/' & $idx;
@@ -159,12 +145,7 @@ export const createVoteProposal =
   $x.assert.include(['majority','quadratic'], $form.voteType, 'invalid vote type');
 
   $x.assert.equal($count($inputs), 1, 'only one input is allowed');
-  $i := $inputs[0];
-  $o := $i.output;
-  $x.assert.equal($count($o.coins), 1, 'must only have one coin');
-  $coin := $o.coins[0];
-  $x.assert.isTrue($x.coin.same($coin, $state.createVoteFee), 'coin must be PRAX');
-  $x.assert.equal($coin.amount, $state.createVoteFee.amount, 'you must send exactly ' & $x.toDisplay($state.createVoteFee) & ' PRAX');
+  $inputMustBe($inputs[0], $state.createVoteFee);
 
   $idx := $state.votes;
   $id := $state.name & '/vote/' & $idx;
@@ -197,31 +178,17 @@ export const createVoteProposal =
 export const joinOrg =
 `
 (
+  $x.assert.equal($count($inputs), 1, 'only one input is allowed');
+
   /* find org */
-  $query := {
-    'queryParser': {
-      'class': 'classic',
-      'defaultOperator': 'and',
-      'defaultField': 'id'
-    },
-    'queryText': 'govId:"' & $x.contractKey & '" id:"' & $form.orgId & '" docType:"${DocTypes.Org}"',
-    'retrieveFields': ['id', 'joinFee', 'joinTokens', 'decimals', 'symbol']
-  };
-  $find := $searchSpace($state.space, $query);
-  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
-  $x.assert.equal($find.hits.totalHits, 1, 'org not found');
-  $org := $find.hits.hits[0].fields;
+  $queryText := ['govId', $x.contractKey, 'id', $form.orgId, 'docType', '${DocTypes.Org}'];
+  $q := $query($queryText, ['id', 'joinFee', 'joinTokens', 'decimals', 'symbol']);
+  $org := $searchSpace($state.space, $q) ~> $getSingleHit('org');
 
   /* check payment */
-  $x.assert.equal($count($inputs), 1, 'only one input is allowed');
-  $i := $inputs[0];
-  $o := $i.output;
-  $x.assert.equal($count($o.coins), 1, 'must only have one coin');
-  $coin := $o.coins[0];
   $joinFee := $x.toCoinUnit($org.joinFee, $x.coin.praxDecimals);
   $joinFeeCoin := $x.coin.prax($joinFee);
-  $x.assert.isTrue($x.coin.same($coin, $joinFeeCoin), 'coin must be PRAX');
-  $x.assert.equal($coin.amount, $joinFeeCoin.amount, 'you must send exactly ' & $org.joinFee & ' PRAX');
+  $inputMustBe($inputs[0], $joinFeeCoin);
 
   /* add member */
   $idx := $state.members;
@@ -249,65 +216,30 @@ export const joinOrg =
 export const vote =
 `
 (
+  $x.assert.equal($count($inputs), 2, 'two inputs are required');
   $x.assert.include(['${VoteValue.for}','${VoteValue.against}'], $form.vote, 'invalid vote');
 
   /* find vote proposal */
-  $query := {
-    'queryParser': {
-      'class': 'classic',
-      'defaultOperator': 'and',
-      'defaultField': 'id'
-    },
-    'queryText': 'govId:"' & $x.contractKey & '" id:"' & $form.voteProposalId & '" docType:"${DocTypes.VoteProposal}"',
-    'retrieveFields': ['id', 'stake', 'orgId', 'proposalId', 'voteStart', 'voteEnd']
-  };
-  $find := $searchSpace($state.space, $query);
-  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
-  $x.assert.equal($find.hits.totalHits, 1, 'vote proposal not found');
-  $voteProposal := $find.hits.hits[0].fields;
+  $queryText := ['govId', $x.contractKey, 'id', $form.voteProposalId, 'docType', '${DocTypes.VoteProposal}'];
+  $q := $query($queryText, ['id', 'stake', 'orgId', 'proposalId', 'voteStart', 'voteEnd']);
+  $voteProposal := $searchSpace($state.space, $q) ~> $getSingleHit('voteProposal');
   $x.assert.isAtLeast($x.now, $voteProposal.voteStart);
   $x.assert.isBelow($x.now, $voteProposal.voteEnd);
 
   /* find org */
-  $query := {
-    'queryParser': {
-      'class': 'classic',
-      'defaultOperator': 'and',
-      'defaultField': 'id'
-    },
-    'queryText': 'govId:"' & $x.contractKey & '" id:"' & $voteProposal.orgId & '" docType:"${DocTypes.Org}"',
-    'retrieveFields': ['id', 'decimals', 'symbol']
-  };
-  $findOrg := $searchSpace($state.space, $query);
-  $x.assert.isNotOk($findOrg.error, 'search failed ' & $errorMessage($findOrg));
-  $x.assert.equal($findOrg.hits.totalHits, 1, 'org not found');
-  $org := $findOrg.hits.hits[0].fields;
+  $orgText := ['govId', $x.contractKey, 'id', $voteProposal.orgId, 'docType', '${DocTypes.Org}'];
+  $q := $query($orgText, ['id', 'decimals', 'symbol']);
+  $org := $searchSpace($state.space, $q) ~> $getSingleHit('org');
 
   /* find member */
-  $query := {
-    'queryParser': {
-      'class': 'classic',
-      'defaultOperator': 'and',
-      'defaultField': 'id'
-    },
-    'queryText': 'govId:"' & $x.contractKey & '" orgId:"' & $org.id & '" docType:"${DocTypes.Member}"' & ' owner:"' & $action.ledger & '"',
-    'retrieveFields': ['id']
-  };
-  $findMember := $searchSpace($state.space, $query);
-  $x.assert.isNotOk($findMember.error, 'search failed ' & $errorMessage($find));
-  $x.assert.equal($findMember.hits.totalHits, 1, 'member not found for org');
-  $member := $findMember.hits.hits[0].fields;
+  $memberText := ['govId', $x.contractKey, 'orgId', $org.id, 'docType', '${DocTypes.Member}', 'owner', $action.ledger];
+  $q := $query($memberText, ['id']);
+  $member := $searchSpace($state.space, $q) ~> $getSingleHit('member');
 
-  $x.assert.equal($count($inputs), 2, 'two inputs are required');
   /* check stake */
-  $i0 := $inputs[0];
-  $o0 := $i0.output;
-  $x.assert.equal($count($o0.coins), 1, 'must only have one coin');
-  $coin0 := $o0.coins[0];
   $stake := $x.toCoinUnit($voteProposal.stake, $x.coin.praxDecimals);
   $stakeCoin := $x.coin.prax($stake);
-  $x.assert.isTrue($x.coin.same($coin0, $stakeCoin), 'coin must be PRAX');
-  $x.assert.equal($coin0.amount, $stakeCoin.amount, 'you must send exactly ' & $voteProposal.stake & ' PRAX');
+  $inputMustBe($inputs[0], $stakeCoin);
 
   $amount := $voteProposal.voteType = 'majority' ?
   (
@@ -319,13 +251,9 @@ export const vote =
   );
 
   /* check vote tokens */
-  $i1 := $inputs[1];
-  $o1 := $i1.output;
-  $x.assert.equal($count($o1.coins), 1, 'must only have one coin');
-  $coin1 := $o1.coins[0];
   $convertAmount := $x.toCoinUnit($amount, $org.decimals);
   $coinAmount := $x.coin.new($convertAmount, $org.symbol, $org.decimals);
-  $x.assert.isTrue($x.coin.greaterThanOrEqual($coin1, $coinAmount), 'not enough vote tokens for vote');
+  $inputMustBeAtLeast($inputs[1], $coinAmount);
 
   /* add vote */
   $doc := {
@@ -340,7 +268,7 @@ export const vote =
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
   /* compute new vote token amount and send back */
-  $out := $x.outputLessCoin($o1, $convertAmount);
+  $out := $x.outputLessCoin($inputs[1].output, $convertAmount);
   $x.result($state, [$out])
 )
 `
@@ -349,21 +277,9 @@ export const getVoteResult =
 `
 (
   $x.assert.isAtLeast($form.maxVoters, 10, 'invalid maxVoters');
-  $queryText := 'govId:"' & $x.contractKey & '" voteProposalId:"' & $form.voteProposalId & '" docType:"${DocTypes.Vote}"';
-  $query := {
-    'facets': [
-      { 'dim': 'vote', 'topN': 10 }
-    ],
-    'queryParser': {
-      'class': 'classic',
-      'defaultOperator': 'and',
-      'defaultField': 'id'
-    },
-    'topHits': $form.maxVoters,
-    'retrieveFields': ['vote', 'votes'],
-    'queryText': $queryText
-  };
-  $find := $searchSpace($state.space, $query);
+  $queryText := ['govId', $x.contractKey, 'voteProposalId', $form.voteProposalId, 'docType', '${DocTypes.Vote}'];
+  $q := $query($queryText, ['vote', 'votes']);
+  $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.maxVoters, 'facets':[{ 'dim': 'vote', 'topN': 10 }] }]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
   $reducer := function($r, $v) {
@@ -393,29 +309,21 @@ export const listOrgs =
 `
 (
   $x.assert.isAtLeast($form.max, 1, 'invalid max');
-  $queryText := 'govId:"' & $x.contractKey & '" docType:"${DocTypes.Org}"';
-  $query := {
-    'queryParser': {
-      'class': 'classic',
-      'defaultOperator': 'and',
-      'defaultField': 'id'
-    },
-    'topHits': $form.max,
-    'retrieveFields': [
-      'id',
-      'name',
-      'owner',
-      'title',
-      'subtitle',
-      'description',
-      'symbol',
-      'decimals',
-      'joinFee',
-      'joinTokens'
-    ],
-    'queryText': $queryText
-  };
-  $find := $searchSpace($state.space, $query);
+  $queryText := ['govId', $x.contractKey, 'docType', '${DocTypes.Org}'];
+  $q := $query($queryText, [
+    'id',
+    'govId',
+    'name',
+    'owner',
+    'title',
+    'subtitle',
+    'description',
+    'symbol',
+    'decimals',
+    'joinFee',
+    'joinTokens'
+  ]);
+  $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
   $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
@@ -426,28 +334,62 @@ export const listOrgs =
 export const listProposals =
 `
 (
+  $x.assert.isAtLeast($form.max, 1, 'invalid max');
+  $queryText := ['govId', $x.contractKey, 'docType', '${DocTypes.Proposal}'];
+  $q := $query($queryText, [
+    'id',
+    'govId',
+    'owner',
+    'name',
+    'title',
+    'subtitle',
+    'description'
+  ]);
+  $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max }]));
+  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
+
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
+  $x.result($state, [$out])
 )
 `
 
-export const listVotes =
+export const listVoteProposals =
+`
+(
+  $x.assert.isAtLeast($form.max, 1, 'invalid max');
+  $queryText := ['govId', $x.contractKey, 'docType', '${DocTypes.VoteProposal}'];
+  $q := $query($queryText, [
+    'id',
+    'govId',
+    'owner',
+    'title',
+    'subtitle',
+    'description',
+    'name',
+    'voteType',
+    'orgId',
+    'proposalId',
+    'minVoters',
+    'maxVoters',
+    'voteEnd',
+    'voteStart',
+    'stake'
+  ]);
+  $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
+  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
+
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
+  $x.result($state, [$out])
+)
+`
+
+export const closeVote =
 `
 (
 )
 `
 
-export const getOrg =
-`
-(
-)
-`
-
-export const getProposal =
-`
-(
-)
-`
-
-export const getVoteProposal =
+export const claimVote =
 `
 (
 )
@@ -493,6 +435,26 @@ export const template = (ledger): TemplateJson => createTemplate('incentum-gover
   {
     type: 'listOrgs',
     code: listOrgs,
+    language: 'jsonata',
+  },
+  {
+    type: 'listProposals',
+    code: listProposals,
+    language: 'jsonata',
+  },
+  {
+    type: 'listVoteProposals',
+    code: listVoteProposals,
+    language: 'jsonata',
+  },
+  {
+    type: 'closeVote',
+    code: closeVote,
+    language: 'jsonata',
+  },
+  {
+    type: 'claimVote',
+    code: claimVote,
     language: 'jsonata',
   },
 ]
