@@ -356,7 +356,7 @@ describe('governance e2e', async () => {
 
       const x = setExtensions(contractHash, result.contract.key, [context], timestamp)
       const idx = 0
-      voteProposalId = `${voteState.name}/vote/${idx}`
+      voteProposalId = `${startContractKey}/${voteState.name}/vote/${idx}`
 
       const doc = await findDocumentById(context, space, voteProposalId, DocTypes.VoteProposal,
         ['id', 'docType', 'owner', 'name', 'title', 'subtitle', 'description', 'voteType', 'minVoters', 'maxVoters', 'stake', 'voteStart', 'voteEnd', 'orgId', 'proposalId']
@@ -525,8 +525,13 @@ describe('governance e2e', async () => {
       const inputs = [fee, voteTokens]
       action.inputs = inputs
       action.signatures = signInputs(inputs, { ledger, mnemonic: seed0})
-      const result = await contractAction(action, timestamp)
-      voteState = omit((result.action as any).state.state, '_stateSpace')
+      try {
+        // should fail
+        const result = await contractAction(action, timestamp)
+        voteState = omit((result.action as any).state.state, '_stateSpace')
+        expect(true).toEqual(false)
+      } catch (e) {
+      }
 
       const queryText = `govId:"${startContractKey}" voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
       const query = {
@@ -548,14 +553,14 @@ describe('governance e2e', async () => {
       const ifor = vfor ? vfor[1] : 0
       const iagainst = vagainst ? vagainst[1] : 0
       expect(ifor).toEqual(1)
-      expect(iagainst).toEqual(1)
+      expect(iagainst).toEqual(0)
 
       const outputs = await getUnusedOutputs({ledger})
       const resout = outputs.outputs.find((o) => o.title === out.title)
       expect(resout).toBeTruthy()
       expect(resout.coins.length).toBe(1)
       expect(resout.coins[0].symbol).toBe('MYORGTOKENS')
-      expect(resout.coins[0].amount).toBe('9998')
+      expect(resout.coins[0].amount).toBe('9999')
 
     } catch (e) {
       console.log('error in contract e2e', e)
@@ -580,8 +585,8 @@ describe('governance e2e', async () => {
       const outputs = await getUnusedOutputs({ledger})
       const resout = outputs.outputs.find((o) => o.title === form.title)
       expect(resout).toBeTruthy()
-      expect(resout.subtitle).toBe('for 1, against 1')
-      expect(resout.data).toEqual({ for: 1, against: 1})
+      expect(resout.subtitle).toBe('for 1, against 0')
+      expect(resout.data).toEqual({ for: 1, against: 0})
 
     } catch (e) {
       console.log('error in contract e2e', e)
@@ -608,6 +613,60 @@ describe('governance e2e', async () => {
       expect(resout).toBeTruthy()
       expect(resout.data.length).toEqual(1)
       expect(resout.data[0].fields.title).toEqual('create org title')
+
+    } catch (e) {
+      console.log('error in contract e2e', e)
+      expect(true).toEqual(false)
+    }
+
+  });
+
+  it('close vote', async () => {
+
+    if (!contractHash) { return }
+
+    try {
+      const form = {
+        voteProposalId,
+        maxVoters: 1000,
+        title: 'Close vote for myproposal',
+        subtitle: 'Close vote for myproposal',
+      }
+      const action = createAction(ledger, contractHash, 'closeVote', form);
+      const endTimestamp = new Date('2019-09-30').getTime()
+      const result = await contractAction(action, endTimestamp)
+
+      const outputs = await getUnusedOutputs({ledger})
+      const resout = outputs.outputs.find((o) => o.title === form.title)
+      expect(resout).toBeTruthy()
+      console.log('closeout', resout.data)
+      // expect(resout.data).toEqual({ for: 1, against: 1})
+
+    } catch (e) {
+      console.log('error in contract e2e', e)
+      expect(true).toEqual(false)
+    }
+
+  });
+
+  it('claim vote', async () => {
+
+    if (!contractHash) { return }
+
+    try {
+      const form = {
+        voteProposalId,
+        title: 'Claim vote for myproposal',
+        subtitle: 'Claim vote for myproposal',
+      }
+      const action = createAction(ledger, contractHash, 'claimVote', form);
+      const result = await contractAction(action, timestamp)
+
+      // const outputs = await getUnusedOutputs({ledger})
+      // const resout = outputs.outputs.find((o) => o.title === form.title)
+      // expect(resout).toBeTruthy()
+      // console.log('closeout', resout.data)
+      // expect(resout.data).toEqual({ for: 1, against: 1})
 
     } catch (e) {
       console.log('error in contract e2e', e)

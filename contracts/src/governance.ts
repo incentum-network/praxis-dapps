@@ -148,7 +148,7 @@ export const createVoteProposal =
   $inputMustBe($inputs[0], $state.createVoteFee);
 
   $idx := $state.votes;
-  $id := $state.name & '/vote/' & $idx;
+  $id := $join([$x.contractKey, '/', $state.name, '/vote/', $string($idx)]);
   $doc := {
     'id': $id,
     'docType': '${DocTypes.VoteProposal}',
@@ -235,6 +235,13 @@ export const vote =
   $memberText := ['govId', $x.contractKey, 'orgId', $org.id, 'docType', '${DocTypes.Member}', 'owner', $action.ledger];
   $q := $query($memberText, ['id']);
   $member := $searchSpace($state.space, $q) ~> $getSingleHit('member');
+
+  /* find member */
+  $votedText := ['govId', $x.contractKey, 'memberId', $member.id, 'docType', '${DocTypes.Vote}', 'voteProposalId', $voteProposal.id];
+  $votedQ := $query($votedText, ['id']);
+  $voted := $searchSpace($state.space, $votedQ);
+  $x.assert.isNotOk($voted.error, 'search failed ' & $errorMessage($voted));
+  $x.assert.equal($voted.hits.totalHits, 0, 'you already voted');
 
   /* check stake */
   $stake := $x.toCoinUnit($voteProposal.stake, $x.coin.praxDecimals);
@@ -386,12 +393,68 @@ export const listVoteProposals =
 export const closeVote =
 `
 (
+  $x.assert.isAtLeast($form.maxVoters, 10, 'invalid maxVoters');
+
+  /* find vote proposal */
+  $queryText := ['govId', $x.contractKey, 'id', $form.voteProposalId, 'docType', '${DocTypes.VoteProposal}'];
+  $q := $query($queryText, [
+    'id',
+    'govId',
+    'owner',
+    'title',
+    'subtitle',
+    'description',
+    'name',
+    'voteType',
+    'orgId',
+    'proposalId',
+    'minVoters',
+    'maxVoters',
+    'voteEnd',
+    'voteStart',
+    'stake',
+    'docType'
+  ]);
+  $voteProposal := $searchSpace($state.space, $q) ~> $getSingleHit('voteProposal');
+  $x.assert.equal($voteProposal.owner, $action.ledger, 'you are not the owner of this proposal');
+  $x.assert.isAbove($x.now, $voteProposal.voteEnd, 'voting is not over yet');
+  $x.assert.isNotOk($voteProposal.closed, 'voting is already closed');
+
+  $queryText := ['govId', $x.contractKey, 'voteProposalId', $form.voteProposalId, 'docType', '${DocTypes.Vote}'];
+  $q := $query($queryText, ['vote', 'votes']);
+  $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.maxVoters, 'facets':[{ 'dim': 'vote', 'topN': 10 }] }]));
+  $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
+
+  $reducer := function($r, $v) {
+    (
+      $vote := $v.fields.vote;
+      $votes := $v.fields.votes;
+      $vote = 'for' ? ({ 'for': $r.for + $votes, 'against': $r.against }) : ({ 'for': $r.for, 'against': $r.against + $votes})
+    )
+  };
+  $results := $reduce($find.hits.hits, $reducer, { 'for': 0, 'against': 0 });
+
+  $doc := $merge([$voteProposal, $results, {'closed': 'yes'}]);
+  $deleteDocumentsFromSpace($state.space, 'id', [$voteProposal.id]);
+  $addDocumentToSpaceThenCommit($state.space, $doc);
+
+  /* compute new vote token amount and send back */
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $doc);
+  $x.result($state, [$out])
 )
 `
 
 export const claimVote =
 `
 (
+  /* find vote proposal */
+  $queryText := ['govId', $x.contractKey, 'id', $form.voteProposalId, 'docType', '${DocTypes.VoteProposal}', 'closed', 'yes'];
+  $q := $query($queryText, ['id', 'stake', 'orgId', 'proposalId', 'voteStart', 'voteEnd', 'owner']);
+  $voteProposal := $searchSpace($state.space, $q);
+  $x.assert.isNotOk($voteProposal.error, 'search failed ' & $errorMessage($voteProposal));
+  $x.log($voteProposal.hits);
+
+  $x.result($state, [])
 )
 `
 

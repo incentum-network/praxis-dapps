@@ -150,6 +150,19 @@ export interface VoteResultForm {
   voteProposalId: string
 }
 
+export interface CloseVoteForm {
+  voteProposalId: string
+  maxVoters: number
+  title: string
+  subtitle: string
+}
+
+export interface CloseVoteDoc extends VoteProposalDoc {
+  for: number
+  against: number
+  closed: string
+}
+
 export enum DocTypes {
   Gov = 'praxis-governance',
   Org = 'praxis-organization',
@@ -211,6 +224,12 @@ export const fields =
     'store': true,
     'facetIndexFieldName': 'facet_vote'
   },
-  'votes': $x.fields.longField
+  'votes': $x.fields.longField,
+
+  /* close vote document */
+  'for': $x.fields.longField,
+  'against': $x.fields.longField,
+  'closed': $x.fields.keywordField
+
 }
 `
