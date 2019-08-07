@@ -143,9 +143,15 @@ export const createVoteProposal =
   $x.assert.isOk($form.orgId, 'orgId is required');
   $x.assert.isOk($form.proposalId, 'proposalId is required');
   $x.assert.include(['majority','quadratic'], $form.voteType, 'invalid vote type');
+  $x.assert.isOk($form.winPercent > 0 and $form.winPercent <= 100, 'winPercent must be between 0 and 100');
 
   $x.assert.equal($count($inputs), 1, 'only one input is allowed');
   $inputMustBe($inputs[0], $state.createVoteFee);
+
+  /* find org */
+  $queryText := ['govId', $x.contractKey, 'id', $form.orgId, 'docType', '${DocTypes.Org}'];
+  $q := $query($queryText, ['id', 'joinFee', 'joinTokens', 'decimals', 'symbol']);
+  $org := $searchSpace($state.space, $q) ~> $getSingleHit('org');
 
   $idx := $state.votes;
   $id := $join([$x.contractKey, '/', $state.name, '/vote/', $string($idx)]);
@@ -160,12 +166,15 @@ export const createVoteProposal =
     'name': $form.name,
     'voteType': $form.voteType,
     'orgId': $form.orgId,
+    'symbol': $org.symbol,
+    'decimals': $org.decimals,
     'proposalId': $form.proposalId,
     'minVoters': $form.minVoters,
     'maxVoters': $form.maxVoters,
     'voteEnd': $toMillis($form.voteEnd),
     'voteStart': $toMillis($form.voteStart),
-    'stake': $form.stake
+    'stake': $form.stake,
+    'winPercent': $form.winPercent
   };
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
@@ -236,7 +245,7 @@ export const vote =
   $q := $query($memberText, ['id']);
   $member := $searchSpace($state.space, $q) ~> $getSingleHit('member');
 
-  /* find member */
+  /* find voter */
   $votedText := ['govId', $x.contractKey, 'memberId', $member.id, 'docType', '${DocTypes.Vote}', 'voteProposalId', $voteProposal.id];
   $votedQ := $query($votedText, ['id']);
   $voted := $searchSpace($state.space, $votedQ);
@@ -395,6 +404,13 @@ export const closeVote =
 (
   $x.assert.isAtLeast($form.maxVoters, 10, 'invalid maxVoters');
 
+  $closeId := $form.voteProposalId & '/closed';
+  $queryText := ['govId', $x.contractKey, 'id', $closeId, 'docType', '${DocTypes.CloseVote}'];
+  $q := $query($queryText, [ 'id' ]);
+  $closeVote := $searchSpace($state.space, $q);
+  $x.assert.isNotOk($closeVote.error, 'search failed ' & $errorMessage($closeVote));
+  $x.assert.isOk($closeVote.hits.totalHits = 0, 'vote already closed');
+
   /* find vote proposal */
   $queryText := ['govId', $x.contractKey, 'id', $form.voteProposalId, 'docType', '${DocTypes.VoteProposal}'];
   $q := $query($queryText, [
@@ -413,12 +429,14 @@ export const closeVote =
     'voteEnd',
     'voteStart',
     'stake',
+    'winPercent',
+    'decimals',
+    'symbol',
     'docType'
   ]);
   $voteProposal := $searchSpace($state.space, $q) ~> $getSingleHit('voteProposal');
   $x.assert.equal($voteProposal.owner, $action.ledger, 'you are not the owner of this proposal');
   $x.assert.isAbove($x.now, $voteProposal.voteEnd, 'voting is not over yet');
-  $x.assert.isNotOk($voteProposal.closed, 'voting is already closed');
 
   $queryText := ['govId', $x.contractKey, 'voteProposalId', $form.voteProposalId, 'docType', '${DocTypes.Vote}'];
   $q := $query($queryText, ['vote', 'votes']);
@@ -434,11 +452,20 @@ export const closeVote =
   };
   $results := $reduce($find.hits.hits, $reducer, { 'for': 0, 'against': 0 });
 
-  $doc := $merge([$voteProposal, $results, {'closed': 'yes'}]);
-  $deleteDocumentsFromSpace($state.space, 'id', [$voteProposal.id]);
+  $totalVotes := ($results.for + $results.against);
+  $totalStake := $voteProposal.stake * $totalVotes;
+  $winStake := $totalStake * ($voteProposal.winPercent / 100);
+  $loseStake := $totalStake - $winStake;
+  $winner := $results.for > $results.against ? $results.for : $results.against;
+  $loser := $totalVotes - $winner;
+  $win := $winner > 0 ? $winStake / $winner : 0;
+  $lose := $loser > 0 ? $loseStake / $loser : 0;
+  $winlose := ($results.for > $results.against) ? { 'forStake': $win, 'againstStake': $lose } : { 'forStake': $lose, 'againstStake': $win };
+
+  $voteProposalId := $voteProposal.id;
+  $doc := $merge([$voteProposal, $results, $winlose, {'id': $closeId, 'docType': '${DocTypes.CloseVote}', 'voteProposalId': $voteProposalId}]);
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
-  /* compute new vote token amount and send back */
   $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $doc);
   $x.result($state, [$out])
 )
@@ -447,14 +474,45 @@ export const closeVote =
 export const claimVote =
 `
 (
-  /* find vote proposal */
-  $queryText := ['govId', $x.contractKey, 'id', $form.voteProposalId, 'docType', '${DocTypes.VoteProposal}', 'closed', 'yes'];
-  $q := $query($queryText, ['id', 'stake', 'orgId', 'proposalId', 'voteStart', 'voteEnd', 'owner']);
-  $voteProposal := $searchSpace($state.space, $q);
-  $x.assert.isNotOk($voteProposal.error, 'search failed ' & $errorMessage($voteProposal));
-  $x.log($voteProposal.hits);
+  /* find vote closed */
+  $closeId := $form.voteProposalId & '/closed';
+  $queryText := ['govId', $x.contractKey, 'id', $closeId, 'docType', '${DocTypes.CloseVote}'];
+  $q := $query($queryText, [
+    'id',
+    'govId',
+    'owner',
+    'title',
+    'subtitle',
+    'description',
+    'name',
+    'voteType',
+    'orgId',
+    'proposalId',
+    'minVoters',
+    'maxVoters',
+    'voteEnd',
+    'voteStart',
+    'stake',
+    'winPercent',
+    'decimals',
+    'symbol',
+    'voteProposalId',
+    'forStake',
+    'againstStake',
+    'docType'
+  ]);
+  $closed := $searchSpace($state.space, $q) ~> $getSingleHit('closeVote');
 
-  $x.result($state, [])
+  /* find voter */
+  $voterText := ['govId', $x.contractKey, 'owner', $action.ledger, 'docType', '${DocTypes.Vote}', 'voteProposalId', $closed.voteProposalId];
+  $voterQ := $query($voterText, ['vote']);
+  $voter := $searchSpace($state.space, $voterQ) ~> $getSingleHit('voter');
+  $stake := $lookup($closed, $voter.vote & 'Stake');
+
+  $stakeAmount := $x.toCoinUnit($stake, $x.coin.praxDecimals);
+  $stakeCoin := $x.coin.prax($stakeAmount);
+  $out := $x.output($action.ledger, [$stakeCoin], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags);
+  $x.result($state, [$out])
 )
 `
 

@@ -96,6 +96,7 @@ export interface VoteProposalCommon {
   minVoters: number
   maxVoters: number
   stake: number
+  winPercent: number
 }
 
 export interface VoteProposalForm extends VoteProposalCommon {
@@ -170,6 +171,7 @@ export enum DocTypes {
   VoteProposal = 'praxis-vote-proposal',
   Member = 'praxis-member',
   Vote = 'praxis-vote',
+  CloseVote = 'praxis-close-vote',
 }
 
 export const fields =
@@ -210,6 +212,7 @@ export const fields =
   'voteStart': $x.fields.longField,
   'voteEnd': $x.fields.longField,
   'stake': $x.fields.longField,
+  'winPercent': $x.fields.longField,
   'voteType': $x.fields.keywordField,
 
   /* member document */
@@ -229,6 +232,8 @@ export const fields =
   /* close vote document */
   'for': $x.fields.longField,
   'against': $x.fields.longField,
+  'forStake': $x.fields.floatField,
+  'againstStake': $x.fields.floatField,
   'closed': $x.fields.keywordField
 
 }

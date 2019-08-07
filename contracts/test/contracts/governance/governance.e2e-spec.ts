@@ -345,6 +345,7 @@ describe('governance e2e', async () => {
         maxVoters: 10000,
         voteStart: '2019-07-31',
         voteEnd: '2019-08-30',
+        winPercent: 52,
       }
       let output = await getPrax(ledger, 100)
       const input = inputFromOutput(output)
