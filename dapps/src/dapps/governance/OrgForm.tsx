@@ -8,7 +8,7 @@ import { incentumYellow, baseColor } from '../../constants/Colors'
 import { LedgerModel } from '../../models/ledger'
 import Screen from '../../components/Screen'
 import { infoButton, cancelButton } from '../../commonComponents/HeaderButtons'
-import { GovernanceModel, Org } from './model'
+import { GovernanceModel } from './model'
 
 const styles = StyleSheet.create({
   picker: {
@@ -43,9 +43,6 @@ class _OrgForm extends React.PureComponent<OrgFormProps> {
       'decimals',
       'joinStake',
       'joinFee',
-      'approveJoin',
-      'contractKey',
-      'voteProposalFee',
       'joinTokens',
     ],
     properties: {
@@ -76,18 +73,6 @@ class _OrgForm extends React.PureComponent<OrgFormProps> {
       joinTokens: {
         type: 'integer',
         title: 'Vote Tokens For Joining',
-      },
-      voteProposalFee: {
-        type: 'integer',
-        title: 'Vote Proposal Fee in PRAX',
-      },
-      approver: {
-        type: 'string',
-        title: 'Approver Address',
-      },
-      approveJoin: {
-        type: 'boolean',
-        title: 'Approve Member Join Request',
       },
       description: {
         type: 'string',
@@ -137,7 +122,7 @@ class _OrgForm extends React.PureComponent<OrgFormProps> {
           id="governance-org-form"
           idPrefix="gov"
           formContext={{}}
-          formData={governance.orgForm}
+          formData={governance.govs[0].orgs[0]}
           schema={this.jsonSchemaObject}
           onSubmit={(org) => {
             dispatch(createActionObject('governance/saveOrg', { org }))

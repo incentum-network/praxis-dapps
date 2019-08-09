@@ -389,7 +389,8 @@ export const listVoteProposals =
     'maxVoters',
     'voteEnd',
     'voteStart',
-    'stake'
+    'stake',
+    'winPercent'
   ]);
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
@@ -478,28 +479,9 @@ export const claimVote =
   $closeId := $form.voteProposalId & '/closed';
   $queryText := ['govId', $x.contractKey, 'id', $closeId, 'docType', '${DocTypes.CloseVote}'];
   $q := $query($queryText, [
-    'id',
-    'govId',
-    'owner',
-    'title',
-    'subtitle',
-    'description',
-    'name',
-    'voteType',
-    'orgId',
-    'proposalId',
-    'minVoters',
-    'maxVoters',
-    'voteEnd',
-    'voteStart',
-    'stake',
-    'winPercent',
-    'decimals',
-    'symbol',
     'voteProposalId',
     'forStake',
-    'againstStake',
-    'docType'
+    'againstStake'
   ]);
   $closed := $searchSpace($state.space, $q) ~> $getSingleHit('closeVote');
 
@@ -511,7 +493,7 @@ export const claimVote =
 
   $stakeAmount := $x.toCoinUnit($stake, $x.coin.praxDecimals);
   $stakeCoin := $x.coin.prax($stakeAmount);
-  $out := $x.output($action.ledger, [$stakeCoin], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags);
+  $out := $x.output($action.ledger, [$stakeCoin], $form.title, $form.subtitle, 'Your stake', $action.tags);
   $x.result($state, [$out])
 )
 `

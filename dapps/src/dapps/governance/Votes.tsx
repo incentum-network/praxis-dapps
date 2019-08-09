@@ -17,70 +17,20 @@ import {
 import Markdown from 'react-markdown'
 
 import { createActionObject, ScreenWidth, isMobileDevice } from '../../utils'
-import { GovernanceModel, Org, getMember } from './model'
+import { GovernanceModel, Vote, getMember } from './model'
 import * as Animatable from 'react-native-animatable'
 import Accordion from 'react-native-collapsible/Accordion'
 import { Ionicons } from 'react-web-vector-icons'
 
-const OrgDetails = (props) => {
-  const { org, dispatch, ledger }: { org: Org, dispatch: any, ledger: LedgerModel} = props
+const VoteDetails = (props) => {
+  const { vote, dispatch, ledger }: { vote: Vote, dispatch: any, ledger: LedgerModel} = props
   const current = getLedger(ledger)
-  const member = current && getMember(current.ledger, org)
   return (
     <View style={styles.content}>
     <View style={styles.col}>
-      <Text style={styles.headerText}>{org.symbol}</Text>
-      <Text style={styles.subtitleText}>{org.owner}</Text>
-      <View style={styles.row}>
-        <View style={[styles.col, {padding: 10}]}>
-          <View style={styles.row}>
-            <Text style={styles.textLeft}>{`Fee to join:`}</Text>
-            <Text style={styles.text}>{`${org.joinFee} PRAX`}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.textLeft}>{`Tokens for joining:`}</Text>
-            <Text style={styles.text}>{`${org.joinTokens} ${org.symbol}`}</Text>
-          </View>
-        </View>
-        <View style={[styles.right, { justifyContent: 'center'}]}>
-          {!!member ?
-              <TouchableOpacity
-                onPress={() =>
-                  dispatch(
-                    createActionObject('governance/showMember', { member })
-                  )
-                }
-              >
-                <View style={{ height: 40, justifyContent: 'center', marginRight: 10 }}>
-                  <Ionicons
-                    name="ios-person"
-                    color={incentumYellow}
-                    size={40}
-                  />
-                </View>
-              </TouchableOpacity>
-              :
-              <TouchableOpacity
-                onPress={() =>
-                  dispatch(
-                    createActionObject('governance/joinOrg', { org })
-                  )
-                }
-              >
-                <View style={{ height: 40, justifyContent: 'center', marginRight: 10 }}>
-                  <Ionicons
-                    name="ios-person-add"
-                    color={incentumYellow}
-                    size={40}
-                  />
-                </View>
-              </TouchableOpacity>
-        }
-        </View>
-      </View>
       <View style={styles.row}>
         <View style={styles.markdown}>
-          <Markdown source={org.description} />
+          <Markdown source={vote.description} />
         </View>
       </View>
     </View>
@@ -88,20 +38,20 @@ const OrgDetails = (props) => {
   )
 }
 
-interface OrgsProps {
+interface VoteProps {
   history: any
   dispatch: any
   ledger: LedgerModel
   governance: GovernanceModel
 }
 
-class _Orgs extends React.PureComponent<OrgsProps> {
+class _Votes extends React.PureComponent<VoteProps> {
 
   public componentWillMount() {
     const { dispatch, history } = this.props
   }
 
-  public renderHeader(org: Org, _, isActive) {
+  public renderHeader(proposal: Vote, _, isActive) {
     return (
       <View style={styles.accordRow}>
         <Animatable.View
@@ -110,15 +60,16 @@ class _Orgs extends React.PureComponent<OrgsProps> {
           transition="backgroundColor"
         >
           <View>
-            <Text style={styles.headerText}>{org.title}</Text>
-            <Text style={styles.subtitleText}>{org.subtitle}</Text>
+            <Text style={styles.headerText}>{proposal.title}</Text>
+            <Text style={styles.subtitleText}>{proposal.subtitle}</Text>
           </View>
         </Animatable.View>
       </View>
     )
   }
 
-  public renderContent(org: Org, _, isActive) {
+  public renderContent(vote: Vote, _, isActive) {
+    console.log('proposal render content', vote)
     return (
       <Animatable.View
         duration={400}
@@ -126,13 +77,13 @@ class _Orgs extends React.PureComponent<OrgsProps> {
         transition="backgroundColor"
       >
         <Animatable.View duration={400} animation={isActive ? 'slideInDown' : undefined}>
-          <OrgDetails org={org} {...this.props} />
+          <VoteDetails proposal={vote} {...this.props} />
         </Animatable.View>
       </Animatable.View>
     )
   }
 
-  public renderFooter(org: Org, _, isActive) {
+  public renderFooter(vote: Vote, _, isActive) {
     return (
       <View style={styles.accordRow}>
       </View>
@@ -144,15 +95,15 @@ class _Orgs extends React.PureComponent<OrgsProps> {
     return (
       <View style={styles.container}>
         <Accordion
-          activeSections={governance.orgSections}
-          sections={governance.govs[governance.idx].orgs}
+          activeSections={governance.voteSections}
+          sections={governance.govs[governance.idx].votes}
           touchableComponent={TouchableOpacity}
           expandMultiple={true}
           renderHeader={this.renderHeader.bind(this)}
           renderContent={this.renderContent.bind(this)}
           renderFooter={this.renderFooter.bind(this)}
           duration={400}
-          onChange={(orgSections) => dispatch(createActionObject('governance/orgSections', { orgSections }))}
+          onChange={(voteSections) => dispatch(createActionObject('governance/voteSections', { voteSections }))}
         />
       </View>
     )
@@ -254,4 +205,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export const Orgs = connect((state) => ({ ledger: state.ledger, governance: state.governance }))(_Orgs)
+export const Votes = connect((state) => ({ ledger: state.ledger, governance: state.governance }))(_Votes)

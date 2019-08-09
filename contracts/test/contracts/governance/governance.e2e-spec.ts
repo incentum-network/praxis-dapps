@@ -360,7 +360,7 @@ describe('governance e2e', async () => {
       voteProposalId = `${startContractKey}/${voteState.name}/vote/${idx}`
 
       const doc = await findDocumentById(context, space, voteProposalId, DocTypes.VoteProposal,
-        ['id', 'docType', 'owner', 'name', 'title', 'subtitle', 'description', 'voteType', 'minVoters', 'maxVoters', 'stake', 'voteStart', 'voteEnd', 'orgId', 'proposalId']
+        ['id', 'docType', 'owner', 'name', 'title', 'subtitle', 'description', 'voteType', 'minVoters', 'maxVoters', 'stake', 'voteStart', 'voteEnd', 'orgId', 'proposalId', 'winPercent']
       )
       const voteDoc: VoteProposalDoc = {
         id: voteProposalId,
@@ -376,6 +376,7 @@ describe('governance e2e', async () => {
         minVoters: form.minVoters,
         maxVoters: form.maxVoters,
         stake: form.stake,
+        winPercent: form.winPercent,
         voteStart: new Date(form.voteStart).getTime(),
         voteEnd: new Date(form.voteEnd).getTime(),
       };
@@ -640,8 +641,8 @@ describe('governance e2e', async () => {
       const outputs = await getUnusedOutputs({ledger})
       const resout = outputs.outputs.find((o) => o.title === form.title)
       expect(resout).toBeTruthy()
-      console.log('closeout', resout.data)
-      // expect(resout.data).toEqual({ for: 1, against: 1})
+      expect(resout.data.forStake).toBe(52)
+      expect(resout.data.againstStake).toBe(0)
 
     } catch (e) {
       console.log('error in contract e2e', e)
@@ -663,11 +664,11 @@ describe('governance e2e', async () => {
       const action = createAction(ledger, contractHash, 'claimVote', form);
       const result = await contractAction(action, timestamp)
 
-      // const outputs = await getUnusedOutputs({ledger})
-      // const resout = outputs.outputs.find((o) => o.title === form.title)
-      // expect(resout).toBeTruthy()
-      // console.log('closeout', resout.data)
-      // expect(resout.data).toEqual({ for: 1, against: 1})
+      const outputs = await getUnusedOutputs({ledger})
+      const resout = outputs.outputs.find((o) => o.title === form.title)
+      expect(resout).toBeTruthy()
+      expect(resout.coins.length).toBe(1)
+      expect(resout.coins[0].amount).toBe('5200000000')
 
     } catch (e) {
       console.log('error in contract e2e', e)

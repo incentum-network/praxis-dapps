@@ -161,7 +161,8 @@ export interface CloseVoteForm {
 export interface CloseVoteDoc extends VoteProposalDoc {
   for: number
   against: number
-  closed: string
+  forStake: number
+  againstStake: number
 }
 
 export enum DocTypes {

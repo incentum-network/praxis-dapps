@@ -1,21 +1,24 @@
 import React, { Fragment } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, Picker, TouchableOpacity } from 'react-native'
 import { connect } from 'dva'
 
 import { LedgerModel } from '../../models/ledger'
 import { GovernanceModel, SegmentTabOrder } from './model'
+import { Ionicons } from 'react-web-vector-icons'
 
 import {
   incentumYellow,
-  tabColor
+  tabColor,
+  baseColor
 } from '../../constants/Colors'
 import { addButton, refreshButton } from '../../commonComponents/HeaderButtons'
 
 import Screen from '../../components/Screen'
-import { createAction } from '../../utils'
+import { createAction, createActionObject } from '../../utils'
 import SegmentedControlTab from 'react-native-segmented-control-tab'
 
 import { Orgs } from './Orgs'
+import { Proposals } from './Proposals'
 
 const styles = StyleSheet.create({
   activeTabs: {
@@ -35,7 +38,17 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: 'black',
   },
-
+  picker: {
+    height: 40,
+    width: '100%',
+    color: incentumYellow,
+    backgroundColor: baseColor,
+    borderRadius: 5,
+    paddingLeft: 10,
+    paddingRight: 5,
+    borderColor: incentumYellow,
+    flexGrow: 1,
+  },
 })
 
 interface GovernanceScreenProps {
@@ -64,7 +77,7 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
         view = <Orgs history={history}></Orgs>
         break
       case SegmentTabOrder.proposals:
-        view = <View></View>
+        view = <Proposals history={history}></Proposals>
         break
       case SegmentTabOrder.voting:
         view = <View></View>
@@ -90,7 +103,85 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
           right={ addButton(() => history.push('/orgForm'))}
           left={ refreshButton(() => location.reload(true))}
         >
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'flex-start',
+              alignItems: 'flex-end',
+              paddingTop: 10,
+            }}
+          >
+            <View style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+              <View style={{ display: 'flex', flexDirection: 'row' }}>
+                <Picker
+                  // selectedValue={contract.reducerIdx}
+                  style={styles.picker}
+                  onValueChange={(itemValue, govIdx) =>
+                    dispatch({
+                      type: 'contract/selectReducer',
+                      payload: { govIdx },
+                    })
+                  }
+                >
+                  }>
+                    </Picker>
+              </View>
+            </View>
+          </View>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'flex-start',
+              alignItems: 'flex-end',
+              paddingBottom: 10,
+              paddingTop: 10,
+            }}
+          >
+            <View style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+              <View style={{ display: 'flex', flexDirection: 'row' }}>
+                <Picker
+                  // selectedValue={contract.reducerIdx}
+                  style={styles.picker}
+                  onValueChange={(itemValue, govIdx) =>
+                    dispatch({
+                      type: 'contract/selectReducer',
+                      payload: { govIdx },
+                    })
+                  }
+                >
+                  }>
+                    </Picker>
+              </View>
+            </View>
+            <View>
+              <TouchableOpacity
+                onPress={() =>
+                  dispatch(
+                    createActionObject('governance/newGovernance', { ledger })
+                  )
+                }
+              >
+                <View style={{ height: 40, justifyContent: 'center', marginLeft: 10, marginRight: 5 }}>
+                  <Ionicons
+                    name="ios-add-circle-outline"
+                    color={incentumYellow}
+                    size={40}
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           { view }
+          </View>
       </Screen>
 
       </Fragment>
