@@ -19,6 +19,7 @@ import SegmentedControlTab from 'react-native-segmented-control-tab'
 
 import { Orgs } from './Orgs'
 import { Proposals } from './Proposals'
+import { VoteProposals } from './VoteProposals'
 
 const styles = StyleSheet.create({
   activeTabs: {
@@ -80,7 +81,7 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
         view = <Proposals history={history}></Proposals>
         break
       case SegmentTabOrder.voting:
-        view = <View></View>
+        view = <VoteProposals history={history}></VoteProposals>
         break
     }
 
@@ -100,8 +101,22 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
               onTabPress={(selectedTab) => { dispatch(createAction('governance/changeTab', { selectedTab })) }}
             />
           }
-          right={ addButton(() => history.push('/orgForm'))}
-          left={ refreshButton(() => location.reload(true))}
+          right={addButton(() => {
+            let form = ''
+            switch (governance.selectedTab) {
+              case SegmentTabOrder.orgs:
+                form = '/orgForm'
+                break
+              case SegmentTabOrder.proposals:
+                form = '/proposalForm'
+                break
+              case SegmentTabOrder.voting:
+                form = '/voteProposalForm'
+                break
+            }
+            setTimeout(() => history.push(form), 500)
+          })}
+          left={refreshButton(() => location.reload(true))}
         >
           <View
             style={{
@@ -109,80 +124,79 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
               flexDirection: 'column',
             }}
           >
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              alignItems: 'flex-end',
-              paddingTop: 10,
-            }}
-          >
-            <View style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-              <View style={{ display: 'flex', flexDirection: 'row' }}>
-                <Picker
-                  // selectedValue={contract.reducerIdx}
-                  style={styles.picker}
-                  onValueChange={(itemValue, govIdx) =>
-                    dispatch({
-                      type: 'contract/selectReducer',
-                      payload: { govIdx },
-                    })
-                  }
-                >
-                  }>
-                    </Picker>
-              </View>
-            </View>
-          </View>
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              justifyContent: 'flex-start',
-              alignItems: 'flex-end',
-              paddingBottom: 10,
-              paddingTop: 10,
-            }}
-          >
-            <View style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-              <View style={{ display: 'flex', flexDirection: 'row' }}>
-                <Picker
-                  // selectedValue={contract.reducerIdx}
-                  style={styles.picker}
-                  onValueChange={(itemValue, govIdx) =>
-                    dispatch({
-                      type: 'contract/selectReducer',
-                      payload: { govIdx },
-                    })
-                  }
-                >
-                  }>
-                    </Picker>
-              </View>
-            </View>
-            <View>
-              <TouchableOpacity
-                onPress={() =>
-                  dispatch(
-                    createActionObject('governance/newGovernance', { ledger })
-                  )
-                }
-              >
-                <View style={{ height: 40, justifyContent: 'center', marginLeft: 10, marginRight: 5 }}>
-                  <Ionicons
-                    name="ios-add-circle-outline"
-                    color={incentumYellow}
-                    size={40}
-                  />
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'flex-end',
+                paddingTop: 10,
+              }}
+            >
+              <View style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <View style={{ display: 'flex', flexDirection: 'row' }}>
+                  <Picker
+                    selectedValue={ledger.selectedLedgerIndex}
+                    style={styles.picker}
+                    onValueChange={(itemValue, selectedLedgerIndex) =>
+                      createActionObject('ledger/changeSelectedLedgerIndex', {
+                        selectedLedgerIndex,
+                      })
+                    }
+                  >
+                    {ledger.ledgers.map((ledger, index) => (
+                      <Picker.Item label={`${ledger.name}`} value={index} />
+                    ))}
+                  </Picker>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
+            <View
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'flex-end',
+                paddingBottom: 10,
+                paddingTop: 10,
+              }}
+            >
+              <View style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <View style={{ display: 'flex', flexDirection: 'row' }}>
+                  <Picker
+                    selectedValue={governance.govIdx}
+                    style={styles.picker}
+                    onValueChange={(itemValue, govIdx) =>
+                      dispatch({
+                        type: 'governance/selectGov',
+                        payload: { govIdx },
+                      })
+                    }
+                  >
+                    {governance.govs.map((g, idx) => {
+                      return <Picker.Item label={`${g.name}`} value={idx} />
+                    })}
+                  </Picker>
+                </View>
+              </View>
+              <View>
+                <TouchableOpacity
+                  onPress={() => setTimeout(() => history.push('/govForm'), 500)}
+                >
+                  <View style={{ height: 40, justifyContent: 'center', marginLeft: 10, marginRight: 5 }}>
+                    <Ionicons
+                      name="ios-add-circle-outline"
+                      color={incentumYellow}
+                      size={40}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          { view }
+            {view}
           </View>
-      </Screen>
+        </Screen>
 
       </Fragment>
     )

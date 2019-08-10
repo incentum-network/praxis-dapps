@@ -17,7 +17,7 @@ import {
 import Markdown from 'react-markdown'
 
 import { createActionObject, ScreenWidth, isMobileDevice } from '../../utils'
-import { GovernanceModel, Proposal, getMember } from './model'
+import { GovernanceModel, Proposal, getMember, getProposals } from './model'
 import * as Animatable from 'react-native-animatable'
 import Accordion from 'react-native-collapsible/Accordion'
 import { Ionicons } from 'react-web-vector-icons'
@@ -96,7 +96,7 @@ class _Proposals extends React.PureComponent<ProposalProps> {
       <View style={styles.container}>
         <Accordion
           activeSections={governance.proposalSections}
-          sections={governance.govs[governance.idx].proposals}
+          sections={getProposals(governance)}
           touchableComponent={TouchableOpacity}
           expandMultiple={true}
           renderHeader={this.renderHeader.bind(this)}

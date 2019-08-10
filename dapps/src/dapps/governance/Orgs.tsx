@@ -17,7 +17,7 @@ import {
 import Markdown from 'react-markdown'
 
 import { createActionObject, ScreenWidth, isMobileDevice } from '../../utils'
-import { GovernanceModel, Org, getMember } from './model'
+import { GovernanceModel, Org, getMember, getOrgs } from './model'
 import * as Animatable from 'react-native-animatable'
 import Accordion from 'react-native-collapsible/Accordion'
 import { Ionicons } from 'react-web-vector-icons'
@@ -145,7 +145,7 @@ class _Orgs extends React.PureComponent<OrgsProps> {
       <View style={styles.container}>
         <Accordion
           activeSections={governance.orgSections}
-          sections={governance.govs[governance.idx].orgs}
+          sections={getOrgs(governance)}
           touchableComponent={TouchableOpacity}
           expandMultiple={true}
           renderHeader={this.renderHeader.bind(this)}
@@ -185,8 +185,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'column',
     backgroundColor: secondBaseColor,
-    minWidth: isMobileDevice ? ScreenWidth : 600,
-    maxWidth: isMobileDevice ? ScreenWidth : 700,
+    minWidth: isMobileDevice ? '100%' : 600,
+    maxWidth: isMobileDevice ? '100%' : 700,
   },
   left: {
     display: 'flex',

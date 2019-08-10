@@ -7,9 +7,9 @@
     {
       "type": "chrome",
       "request": "launch",
-      "name": "Praxis Dapps",
+      "name": "Launch Chrome against localhost",
       "url": "http://localhost:3031",
-      "webRoot": "${workspaceRoot}/src"
+      "webRoot": "${workspaceFolder}"
     }
   ]
 }

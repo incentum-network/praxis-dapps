@@ -2,6 +2,7 @@ import { createActionObject } from '../../utils'
 import { Model } from 'dva'
 import { hashContractKey } from '@incentum/praxis-contracts'
 import { OrgDoc, GovDoc, ProposalDoc, MemberDoc, VoteProposalDoc } from '../../shared/governance'
+import { Alert } from 'react-native'
 
 export enum SegmentTabOrder {
   orgs = 0,
@@ -12,7 +13,7 @@ export enum SegmentTabOrder {
 export interface GovernanceModel {
   spinner: boolean
   govs: Gov[]
-  idx: number
+  govIdx: number
   selectedTab: SegmentTabOrder
   orgSections: any[]
   proposalSections: any[]
@@ -23,7 +24,7 @@ export interface Proposal extends ProposalDoc {
   extra: number
 }
 
-export interface Vote extends VoteProposalDoc {
+export interface VoteProposal extends VoteProposalDoc {
   extra: number
 }
 
@@ -39,17 +40,64 @@ export function getMember(ledger: string, org: Org): MemberDoc | undefined {
   return org.members && org.members.find((m) => m.ledger === ledger)
 }
 
+export function getGov(model: GovernanceModel): Gov | undefined {
+  return model.govIdx >= 0 ? model.govs[model.govIdx] : undefined
+}
+
+export function getOrgs(model: GovernanceModel): Org[] {
+  const gov = getGov(model)
+  return gov ? gov.orgs : []
+}
+
+export function getOrg(model: GovernanceModel): Org | undefined {
+  const gov = getGov(model)
+  return gov && gov.orgIdx >= 0 ? gov.orgs[gov.orgIdx] : undefined
+}
+
+export function getProposals(model: GovernanceModel): Proposal[] {
+  const gov = getGov(model)
+  return gov ? gov.proposals : []
+}
+
+export function getProposal(model: GovernanceModel): Proposal | undefined {
+  const gov = getGov(model)
+  return gov && gov.proposalIdx >= 0 ? gov.proposals[gov.proposalIdx] : undefined
+}
+
+export function getProposalIdx(model: GovernanceModel): number {
+  const gov = getGov(model)
+  return gov ? gov.proposalIdx : -1
+}
+
+export function getOrgIdx(model: GovernanceModel): number {
+  const gov = getGov(model)
+  return gov ? gov.orgIdx : -1
+}
+
+export function getVoteProposals(model: GovernanceModel): VoteProposal[] {
+  const gov = getGov(model)
+  return gov ? gov.voteProposals : []
+}
+
+export function getVoteProposal(model: GovernanceModel): VoteProposal | undefined {
+  const gov = getGov(model)
+  return gov && gov.voteProposalIdx >= 0 ? gov.voteProposals[gov.voteProposalIdx] : undefined
+}
+
 export interface Gov extends GovDoc {
   orgs: Org[]
-  votes: Vote[]
+  orgIdx: number
+  voteProposals: VoteProposal[]
+  voteProposalIdx: number
   proposals: Proposal[]
+  proposalIdx: number
 }
 
 const model: Model = {
   namespace: 'governance',
   state: {
     spinner: false,
-    idx: 0,
+    govIdx: 0,
     govs: [
       {
         orgs: [
@@ -79,7 +127,11 @@ const model: Model = {
             description: '### Proposal Description',
           },
         ],
-        votes: [],
+        name: 'US of T&A',
+        voteProposals: [],
+        orgIdx: -1,
+        voteProposalIdx: -1,
+        proposalIdx: -1,
       },
     ],
     selectedTab: 0,
@@ -112,8 +164,76 @@ const model: Model = {
         proposalSections,
       }
     },
+    selectGov(state: GovernanceModel, { payload: { govIdx } }): GovernanceModel {
+      return {
+        ...state,
+        govIdx,
+      }
+    },
+    selectProposal(state: GovernanceModel, { payload: { proposalIdx } }): GovernanceModel {
+      if (state.govIdx < 0) { return state }
+      const gov = getGov(state)!
+      const govs = state.govs.slice(0)
+      govs[state.govIdx] = {
+        ...gov,
+        proposalIdx,
+      }
+      return {
+        ...state,
+        govs,
+      }
+    },
+    selectOrg(state: GovernanceModel, { payload: { orgIdx } }): GovernanceModel {
+      if (state.govIdx < 0) { return state }
+      const gov = getGov(state)!
+      const govs = state.govs.slice(0)
+      govs[state.govIdx] = {
+        ...gov,
+        orgIdx,
+      }
+      return {
+        ...state,
+        govs,
+      }
+    },
   },
   effects: {
+    *saveOrg({ payload: { org, history } }, { select, call, put }) {
+      try {
+        setTimeout(() => history.goBack(), 1000)
+      } catch (e) {
+        console.log('saveOrg', e)
+        Alert.alert('Save Org Failed', e.toString())
+      }
+    },
+
+    *saveProposal({ payload: { proposal, history } }, { select, call, put }) {
+      try {
+        setTimeout(() => history.goBack(), 1000)
+      } catch (e) {
+        console.log('saveOrg', e)
+        Alert.alert('Save Org Failed', e.toString())
+      }
+    },
+
+    *saveVoteProposal({ payload: { voteProposal, history } }, { select, call, put }) {
+      try {
+        setTimeout(() => history.goBack(), 1000)
+      } catch (e) {
+        console.log('saveOrg', e)
+        Alert.alert('Save Org Failed', e.toString())
+      }
+    },
+
+    *saveGov({ payload: { gov, history } }, { select, call, put }) {
+      try {
+        setTimeout(() => history.goBack(), 1000)
+      } catch (e) {
+        console.log('saveGov', e)
+        Alert.alert('Save Gov Failed', e.toString())
+      }
+    },
+
   },
   subscriptions: {
     async setup({ history, dispatch }) {

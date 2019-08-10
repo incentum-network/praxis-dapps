@@ -22,7 +22,10 @@ import TemplateSearchScreen from './components/TemplateSearchScreen'
 import OutputDetailScreen from './components/OutputDetailScreen'
 import AddLedgerScreen from './components/AddLedgerScreen'
 import WarnLedgerScreen from './components/WarnLedgerScreen'
-import OrgForm from './dapps/governance/OrgForm';
+import OrgFormCreate from './dapps/governance/OrgFormCreate'
+import GovFormCreate from './dapps/governance/GovFormCreate'
+import ProposalFormCreate from './dapps/governance/ProposalFormCreate'
+import VoteProposalFormCreate from './dapps/governance/VoteProposalFormCreate'
 
 const RouteContainer = posed.div({
   enter: { opacity: 1, delay: 300, beforeChildren: true },
@@ -53,7 +56,10 @@ app.router((api) =>
               <Route exact path="/templateSearchInfo" component={TemplateSearchInfoScreen} key="templateSearchInfo-app-key" />
               <Route exact path="/templateSearch" component={TemplateSearchScreen} key="templateSearch-app-key" />
               <Route exact path="/contractSearch" component={ContractSearchScreen} key="contractSearch-app-key" />
-              <Route exact path="/orgForm" component={OrgForm} key="orgForm-app-key" />
+              <Route exact path="/orgForm" component={OrgFormCreate} key="orgForm-app-key" />
+              <Route exact path="/govForm" component={GovFormCreate} key="govForm-app-key" />
+              <Route exact path="/voteProposalForm" component={VoteProposalFormCreate} key="voteForm-app-key" />
+              <Route exact path="/proposalForm" component={ProposalFormCreate} key="proposalForm-app-key" />
               <Route path="/*" component={Tabs} key="tabs-app-key" />
             </Switch>
           </RouteContainer>
