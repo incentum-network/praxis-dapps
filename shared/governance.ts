@@ -18,6 +18,7 @@ export interface GovDoc extends GovCommon {
   id: string
   docType: string
   owner: string
+  contractHash: string
 }
 
 export interface GovState {

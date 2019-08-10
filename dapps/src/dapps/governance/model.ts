@@ -1,8 +1,11 @@
-import { createActionObject } from '../../utils'
+import { createActionObject, createAction } from '../../utils'
 import { Model } from 'dva'
 import { hashContractKey } from '@incentum/praxis-contracts'
 import { OrgDoc, GovDoc, ProposalDoc, MemberDoc, VoteProposalDoc } from '../../shared/governance'
 import { Alert } from 'react-native'
+import { IPraxisResult, success, statusMessage, txContractStart } from '@incentum/praxis-client'
+import { getLedger, LedgerModel, Ledger } from '../../models/ledger'
+import { ActionJson, uniqueKey, ContractStartPayload, hashJson, ContractResult } from '@incentum/praxis-interfaces'
 
 export enum SegmentTabOrder {
   orgs = 0,
@@ -18,6 +21,7 @@ export interface GovernanceModel {
   orgSections: any[]
   proposalSections: any[]
   voteSections: any[]
+  templateHash: string
 }
 
 export interface Proposal extends ProposalDoc {
@@ -97,6 +101,7 @@ const model: Model = {
   namespace: 'governance',
   state: {
     spinner: false,
+    templateHash: '',
     govIdx: 0,
     govs: [
       {
@@ -196,6 +201,16 @@ const model: Model = {
         govs,
       }
     },
+    showAlert(state: GovernanceModel, { payload: { title, msg }}): GovernanceModel {
+      Alert.alert(
+        title,
+        msg,
+        [
+          {text: 'OK', onPress: () => { return }, style: 'cancel'},
+        ]
+      )
+      return state
+    },
   },
   effects: {
     *saveOrg({ payload: { org, history } }, { select, call, put }) {
@@ -225,11 +240,30 @@ const model: Model = {
       }
     },
 
-    *saveGov({ payload: { gov, history } }, { select, call, put }) {
+    *saveGov({ payload: { gov, history, ledger } }, { select, call, put }) {
       try {
-        setTimeout(() => history.goBack(), 1000)
+        const ledger: LedgerModel = yield select(state => state.ledger)
+        const current = getLedger(ledger)
+        if (!current) {
+          yield put(createActionObject('showAlert', { title: 'Save Gov Failed', msg: `Please select a ledger` }))
+        } else {
+          const governance: GovernanceModel = yield select(state => state.governance)
+          yield put(createAction('startSpinner'))
+          const result: IPraxisResult = yield call(saveGov, gov, ledger, governance)
+          yield put(createAction('stopSpinner'))
+          if (success(result)) {
+            const contract: ContractResult = result.transactionResult.result
+            gov.contractHash = hashJson(contract.contract)
+            yield put(createActionObject('addGov', { gov, result }))
+            yield put(createActionObject('showAlert', { title: 'Gov Saved', msg: 'Government Saved'}))
+            setTimeout(() => history.goBack(), 1000)
+          } else {
+            yield put(createActionObject('showAlert', { title: 'Save Gov Failed', msg: `Save Gov failed, ${statusMessage(result)}` }))
+          }
+          }
       } catch (e) {
         console.log('saveGov', e)
+        yield put(createAction('stopSpinner'))
         Alert.alert('Save Gov Failed', e.toString())
       }
     },
@@ -239,6 +273,61 @@ const model: Model = {
     async setup({ history, dispatch }) {
     },
   },
+}
+
+function govContractKey(gov: Gov): string {
+  return `gov/${gov.name}`
+}
+
+async function saveGov(gov: Gov, ledger: Ledger, governance: GovernanceModel) {
+  gov.owner = ledger.ledger
+  const action: ActionJson = {
+    ...getAction(ledger, 'start', gov),
+    contractHash: governance.templateHash,
+  }
+
+  const payload: ContractStartPayload = {
+    key: govContractKey(gov),
+    action,
+    initialState: {},
+  }
+
+  return await txContractStart(payload, ledger)
+}
+
+async function saveOrg(gov: Gov, ledger: Ledger, org: Org, governance: GovernanceModel) {
+  gov.owner = ledger.ledger
+  const action: ActionJson = {
+    ...getAction(ledger, 'createOrg', org),
+    contractHash: gov.contractHash,
+  }
+
+  const payload: ContractStartPayload = {
+    key: govContractKey(gov),
+    action,
+    initialState: {},
+  }
+
+  return await txContractStart(payload, ledger)
+}
+
+function getAction(ledger: Ledger, type: string, form: any): ActionJson {
+  return {
+    form,
+    type,
+    nonce: uniqueKey(),
+    ledger: ledger.ledger,
+
+    key: '',
+    other: {},
+    tags: [],
+    outputs: [],
+    inputs: [],
+    signatures: [],
+    transaction: '',
+    previousHash: '',
+    contractHash: '',
+  }
 }
 
 export default model
