@@ -1,14 +1,13 @@
 {
-  "name": "praxis-ark-desktop",
+  "name": "praxis-dapps",
   "version": "1.0.336",
   "private": true,
   "dependencies": {
-    "@arkecosystem/client": "^0.1.23",
     "@babel/core": "7.1.6",
     "@incentum/crypto": "^2.4.3",
-    "@incentum/praxis-client": "^0.0.30",
-    "@incentum/praxis-contracts": "^1.0.357",
-    "@incentum/praxis-interfaces": "^1.0.351",
+    "@incentum/praxis-client": "^0.0.33",
+    "@incentum/praxis-contracts": "^1.0.360",
+    "@incentum/praxis-interfaces": "^1.0.352",
     "@react-navigation/core": "^3.0.3",
     "@react-navigation/web": "^1.0.0-alpha.7",
     "@svgr/webpack": "2.4.1",

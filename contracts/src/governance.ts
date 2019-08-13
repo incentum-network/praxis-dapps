@@ -65,7 +65,7 @@ export const start =
     }
   };
   $retstate := $merge([$state, $newstate]);
-  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags);
+  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', ['gov'], $doc);
   $x.result($retstate, [$out])
 )
 `
@@ -100,7 +100,7 @@ export const createOrg =
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
   $retstate := $merge([$state, { 'orgs': $idx + 1 }]);
-  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags);
+  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags, $doc);
   $x.result($retstate, [$out])
 )
 `
@@ -126,7 +126,7 @@ export const createProposal =
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
   $retstate := $merge([$state, { 'proposals': $idx + 1 }]);
-  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, '', $action.tags, { 'proposalId': $id });
+  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, '', $action.tags, $doc);
   $x.result($retstate, [$out])
 )
 `
@@ -179,7 +179,7 @@ export const createVoteProposal =
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
   $retstate := $merge([$state, { 'votes': $idx + 1 }]);
-  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, '', $action.tags, { 'voteProposalId': $id });
+  $out := $x.output($action.ledger, [], $form.title, $form.subtitle, '', $action.tags, $doc);
   $x.result($retstate, [$out])
 )
 `
@@ -216,7 +216,7 @@ export const joinOrg =
 
   /* mint my vote tokens */
   $tokens := $x.toCoinUnit($org.joinTokens, $org.decimals);
-  $mint := $x.mint($action.ledger, $org.symbol, $tokens, $org.decimals, $form.title, $form.subtitle, '', $action.tags);
+  $mint := $x.mint($action.ledger, $org.symbol, $tokens, $org.decimals, $form.title, $form.subtitle, '', $action.tags, $doc);
   $retstate := $merge([$state, { 'members': $idx + 1 }]);
   $x.result($retstate, [], [$mint])
 )
@@ -285,6 +285,7 @@ export const vote =
 
   /* compute new vote token amount and send back */
   $out := $x.outputLessCoin($inputs[1].output, $convertAmount);
+  $out.data = $doc;
   $x.result($state, [$out])
 )
 `
@@ -342,7 +343,7 @@ export const listOrgs =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', ['orgs'], $find.hits.hits);
   $x.result($state, [$out])
 )
 `
@@ -364,7 +365,7 @@ export const listProposals =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max }]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', ['proposals'], $find.hits.hits);
   $x.result($state, [$out])
 )
 `
@@ -395,7 +396,7 @@ export const listVoteProposals =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', $action.tags, $find.hits.hits);
+  $out := $x.output($action.ledger, [],  $form.title, $form.subtitle, '', ['voteProposals'], $find.hits.hits);
   $x.result($state, [$out])
 )
 `

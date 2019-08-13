@@ -91,15 +91,38 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
           title="Governance"
           spinner={governance.spinner}
           titleComponent={
-            <SegmentedControlTab
-              values={segmented}
-              tabTextStyle={styles.tabText}
-              tabStyle={styles.tabs}
-              activeTabTextStyle={styles.activeTabText}
-              activeTabStyle={styles.activeTabs}
-              selectedIndex={governance.selectedTab}
-              onTabPress={(selectedTab) => { dispatch(createAction('governance/changeTab', { selectedTab })) }}
-            />
+            <View style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+            }}>
+              <SegmentedControlTab
+                values={segmented}
+                tabTextStyle={styles.tabText}
+                tabStyle={styles.tabs}
+                activeTabTextStyle={styles.activeTabText}
+                activeTabStyle={styles.activeTabs}
+                selectedIndex={governance.selectedTab}
+                onTabPress={(selectedTab) => { dispatch(createAction('governance/changeTab', { selectedTab })) }}
+              />
+              <View>
+                <TouchableOpacity
+                  onPress={() =>
+                    dispatch(
+                      createActionObject('governance/refreshTab', {})
+                    )
+                  }
+                >
+                  <View style={{ height: 40, justifyContent: 'center', marginLeft: 10 }}>
+                    <Ionicons
+                      name="ios-refresh"
+                      color={incentumYellow}
+                      size={40}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
           }
           right={addButton(() => {
             let form = ''
@@ -174,11 +197,28 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
                     }
                   >
                     {governance.govs.map((g, idx) => {
-                      return <Picker.Item label={`${g.name}`} value={idx} />
+                      return <Picker.Item label={`${g.name} - ${g.title}`} value={idx} />
                     })}
                   </Picker>
                 </View>
               </View>
+              <View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      dispatch(
+                        createActionObject('governance/refreshGovs', { })
+                      )
+                    }
+                  >
+                    <View style={{ height: 40, justifyContent: 'center', marginLeft: 10 }}>
+                      <Ionicons
+                        name="ios-refresh"
+                        color={incentumYellow}
+                        size={40}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </View>
               <View>
                 <TouchableOpacity
                   onPress={() => setTimeout(() => history.push('/govForm'), 500)}

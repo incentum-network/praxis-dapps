@@ -1033,6 +1033,7 @@ function* contractAction(contract: ContractModel, ledger: Ledger, form: any, for
       outputs: [],
       previousHash: '',
       transaction: '',
+      timestamp: Date.now(),
     }
 
     const payload: ContractActionPayload = {
@@ -1110,6 +1111,7 @@ function* contractStart(contract: ContractModel, ledger: Ledger, form: any, form
       outputs: [],
       transaction: '',
       previousHash: '',
+      timestamp: Date.now(),
     }
 
     let key = uniqueKey()

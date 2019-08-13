@@ -56,7 +56,7 @@ export function notifyInfo(title: string, msg: string, state: LedgerModel): Ledg
 }
 
 export function getLedger(model: LedgerModel) {
-  return model.selectedLedgerIndex >= 0 ? model.ledgers[model.selectedLedgerIndex] : undefined
+  return model.selectedLedgerIndex >= 0 ? model.ledgers[model.selectedLedgerIndex] : getDefaultLedger(model)
 }
 
 async function generateMnemonic() {
@@ -161,10 +161,26 @@ async function restoreLedger(user: User, restore: RestoreLedger): Promise<Ledger
   throw new Error('ledger not found')
 }
 
+const networks = {
+  local: {
+    networkVersion: 23,
+  },
+  testnet: {
+    networkVersion: 23,
+  },
+  devnet: {
+    networkVersion: 30,
+  },
+  mainnet: {
+    networkVersion: 23,
+  },
+}
+
+const arkNetwork = 'local'
+
 async function restoreWallet(user: User, restore: RestoreLedger): Promise<Ledger> {
   const { name, mnemonic, description } = restore
-  Managers.configManager.setFromPreset('testnet')
-  const ledger: string = Identities.Address.fromPassphrase(mnemonic)
+  const ledger: string = Identities.Address.fromPassphrase(mnemonic, networks[arkNetwork].networkVersion)
   return {
     name,
     ledger,
@@ -259,7 +275,7 @@ export function prompt(title: string, msg: string, mnemonic: string): Promise<st
   )
 }
 
-function* getUnusedOutputs(ledger: Ledger, call) {
+export function* getUnusedOutputs(ledger: Ledger, call) {
   try {
     const payload: GetUnusedOutputsPayload = {
       ledger: ledger.ledger,

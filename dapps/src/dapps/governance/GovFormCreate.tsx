@@ -17,16 +17,17 @@ interface GovFormCreateProps {
   governance: GovernanceModel
 }
 
-function toGovForm(obj: any): GovForm {
+function toGovForm({ formData }): GovForm {
+  console.log('toGovForm', formData)
   return {
-    name: obj.name,
-    title: obj.title,
-    subtitle: obj.subtitle,
-    description: obj.description,
-    space: obj.space,
-    createOrgFee: obj.createOrgFee,
-    createVoteFee: obj.createVoteFee,
-    createProposalFee: obj.createProposalFee,
+    name: formData.name,
+    title: formData.title,
+    subtitle: formData.subtitle,
+    description: formData.description,
+    space: formData.space,
+    createOrgFee: formData.createOrgFee,
+    createVoteFee: formData.createVoteFee,
+    createProposalFee: formData.createProposalFee,
   }
 }
 
@@ -136,10 +137,10 @@ class _GovFormCreate extends React.PureComponent<GovFormCreateProps> {
               formContext={{}}
               formData={getGov(governance)}
               schema={this.jsonSchemaObject}
-              onSubmit={org => {
+              onSubmit={gov => {
                 dispatch(
                   createActionObject('governance/saveGov', {
-                    gov: toGovForm(org),
+                    gov: toGovForm(gov),
                     history,
                   })
                 )

@@ -10,6 +10,7 @@ export function createAction(ledger: string, contractHash: string, reducer: stri
     other: {},
     tags: [],
     transaction: uniqueKey(),
+    timestamp: Date.now(),
     inputs: [],
     outputs: [],
     signatures: [],
