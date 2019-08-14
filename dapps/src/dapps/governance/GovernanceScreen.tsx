@@ -107,11 +107,19 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
               />
               <View>
                 <TouchableOpacity
-                  onPress={() =>
-                    dispatch(
-                      createActionObject('governance/refreshTab', {})
-                    )
-                  }
+                  onPress={() => {
+                    switch (governance.selectedTab) {
+                      case SegmentTabOrder.orgs:
+                        dispatch(createAction('governance/refreshOrgs'))
+                        break
+                      case SegmentTabOrder.proposals:
+                        dispatch(createAction('governance/refreshProposals'))
+                        break
+                      case SegmentTabOrder.voting:
+                        dispatch(createAction('governance/refreshVoteProposals'))
+                        break
+                    }
+                  }}
                 >
                   <View style={{ height: 40, justifyContent: 'center', marginLeft: 10 }}>
                     <Ionicons
