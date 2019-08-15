@@ -261,7 +261,7 @@ export async function checkMnemonic(ledger: Ledger, tx: string, onlyIfEmpty: boo
 }
 
 export function prompt(title: string, msg: string, mnemonic: string): Promise<string> {
-  return new Promise((resolve) =>
+  return new Promise((resolve) => {
     AlertIOS.prompt(title, msg, [
       {
         text: 'Ok',
@@ -272,7 +272,7 @@ export function prompt(title: string, msg: string, mnemonic: string): Promise<st
         onPress: (text: string) => resolve(''),
       },
     ], 'secure-text', mnemonic)
-  )
+  })
 }
 
 export function* getUnusedOutputs(ledger: Ledger, call) {
@@ -588,7 +588,10 @@ const ledger: Model = {
   effects: {
     *accountToOutput({ payload: { ledger } }, { select, call, put } ) {
       try {
-        if (!(yield call(checkMnemonic, ledger, 'accountToOutput'))) { return }
+        const mn = yield call(checkMnemonic, ledger, 'accountToOutput')
+        if (!mn) {
+          return
+        }
         const model = yield select(state => state.ledger)
         const amount = `${Number(model.amount) * 1e8}`
         const payload: AccountToOutputPayload = { amount }

@@ -110,13 +110,15 @@ class _GovernanceScreen extends React.PureComponent<GovernanceScreenProps> {
                   onPress={() => {
                     switch (governance.selectedTab) {
                       case SegmentTabOrder.orgs:
-                        dispatch(createAction('governance/refreshOrgs'))
+                        console.log('refreshOrgs')
+                        dispatch(createAction('governance/refreshOrgs', {}))
+                        console.log('after refreshOrgs')
                         break
                       case SegmentTabOrder.proposals:
-                        dispatch(createAction('governance/refreshProposals'))
+                        dispatch(createAction('governance/refreshProposals', {}))
                         break
                       case SegmentTabOrder.voting:
-                        dispatch(createAction('governance/refreshVoteProposals'))
+                        dispatch(createAction('governance/refreshVoteProposals', {}))
                         break
                     }
                   }}

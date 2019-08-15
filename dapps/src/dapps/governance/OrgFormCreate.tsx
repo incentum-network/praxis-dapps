@@ -17,16 +17,16 @@ interface OrgFormCreateProps {
   governance: GovernanceModel
 }
 
-function toOrgForm(obj: any): OrgForm {
+function toOrgForm({ formData }): OrgForm {
   return {
-    name: obj.name,
-    title: obj.title,
-    subtitle: obj.subtitle,
-    description: obj.description,
-    symbol: obj.symbol,
-    decimals: obj.decimals,
-    joinFee: obj.joinFee,
-    joinTokens: obj.joinTokens,
+    name: formData.name,
+    title: formData.title,
+    subtitle: formData.subtitle,
+    description: formData.description,
+    symbol: formData.symbol,
+    decimals: formData.decimals,
+    joinFee: formData.joinFee,
+    joinTokens: formData.joinTokens,
   }
 }
 

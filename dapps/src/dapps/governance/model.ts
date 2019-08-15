@@ -1,11 +1,33 @@
 import { createActionObject, createAction } from '../../utils'
 import { Model } from 'dva'
-import { hashContractKey } from '@incentum/praxis-contracts'
-import { OrgDoc, GovDoc, ProposalDoc, MemberDoc, VoteProposalDoc } from '../../shared/governance'
+import { OrgDoc, GovDoc, ProposalDoc, MemberDoc, VoteProposalDoc, OrgForm } from '../../shared/governance'
 import { Alert } from 'react-native'
 import { getLedger, LedgerModel, Ledger, ledgerReady, getUnusedOutputs } from '../../models/ledger'
-import { IPraxisResult, success, statusMessage, txContractStart, txContractAction, setNetwork } from '@incentum/praxis-client'
-import { ActionJson, uniqueKey, ContractStartPayload, hashJson, ContractResult, ContractActionPayload } from '@incentum/praxis-interfaces'
+import {
+  IPraxisResult,
+  success,
+  statusMessage,
+  txContractStart,
+  txContractAction,
+  setNetwork,
+  signInputs,
+  txAccountToOutput,
+  txInstanceSearch,
+  txContractFromAction
+} from '@incentum/praxis-client'
+import {
+  ActionJson,
+  uniqueKey,
+  ContractStartPayload,
+  hashJson,
+  ContractResult,
+  ContractActionPayload,
+  OutputJson,
+  inputFromOutput,
+  AccountToOutputPayload,
+  InstanceSearchPayload,
+  GetContractFromActionPayload
+} from '@incentum/praxis-interfaces'
 
 export enum SegmentTabOrder {
   orgs = 0,
@@ -120,6 +142,7 @@ export interface Gov extends GovDoc {
   voteProposalIdx: number
   proposals: Proposal[]
   proposalIdx: number
+  output?: OutputJson
 }
 
 function toGov(doc: GovDoc): Gov {
@@ -289,7 +312,25 @@ const model: Model = {
         govs,
       }
     },
+    addOrg(state: GovernanceModel, { payload: { org } }): GovernanceModel {
+      if (state.govIdx < 0) { return state }
+      const gov = getGov(state)!
+      const govs = state.govs.slice(0)
+      const orgs = gov.orgs.slice(0)
+      orgs.push(org)
+      const orgIdx = orgs.length - 1
+      govs[state.govIdx] = {
+        ...gov,
+        orgs,
+        orgIdx,
+      }
+      return {
+        ...state,
+        govs,
+      }
+    },
     showAlert(state: GovernanceModel, { payload: { title, msg }}): GovernanceModel {
+      console.log('showAlert', title)
       Alert.alert(
         title,
         msg,
@@ -320,17 +361,19 @@ const model: Model = {
         const governance: GovernanceModel = yield select(state => state.governance)
         const gov = getGov(governance)
         const current = getLedger(ledger)
-        if (!gov || !(yield call(ledgerReady, current, 'saveGov'))) {
+        if (!gov || (!(yield call(ledgerReady, current, 'createOrgFee')))) {
           yield put(createActionObject('showAlert', { title: 'Save Org Failed', msg: `Please select a gov and a ledger` }))
         } else {
-          yield put(createAction('ledger/changeAmount', { amount: gov.createOrgFee  }))
-          yield put(createActionObject('ledger/accountToOutput', { ledger: current }))
-          const ledger: LedgerModel = yield select(state => state.ledger)
-          const oledger = getLedger(ledger)
-          const createOrgFee = `${Number(gov.createOrgFee) * 1e8}`
-          const fee = oledger.outputs.find((o) => o.title === 'PRAX tokens from wallet' && o.coins[0].amount === createOrgFee)
-          const created: Org = yield call(createOrg, org, ledger, fee)
-          yield put(createActionObject('addOrg', { org: created }))
+          const amount = `${Number(gov.createOrgFee) * 1e8}`
+          const payload: AccountToOutputPayload = { amount }
+          const a2o: IPraxisResult = yield call(txAccountToOutput, payload, current)
+          const createOrgFee = a2o.praxis.outputs.find((o) => o.title === 'PRAX tokens from wallet' && o.coins[0].amount === amount)
+          console.log('createOrgFee', createOrgFee)
+          if (!(yield call(ledgerReady, current, 'createOrg'))) { return }
+          const created: Org = yield call(createOrg, gov, org, current, createOrgFee)
+          if (created) {
+            yield put(createActionObject('addOrg', { org: created }))
+          }
         }
         setTimeout(() => history.goBack(), 1000)
       } catch (e) {
@@ -389,27 +432,43 @@ const model: Model = {
       try {
         const ledger: LedgerModel = yield select(state => state.ledger)
         const current = getLedger(ledger)
-        if (!(yield call(ledgerReady, current, 'saveGov'))) { return }
+        if (!(yield call(ledgerReady, current, 'refreshGovs'))) { return }
         yield put(createAction('startSpinner'))
         const result: IPraxisResult = yield getUnusedOutputs(current, call)
         yield put(createAction('stopSpinner'))
         console.log('refreshGovs', result)
         if (success(result)) {
           const governance: GovernanceModel = yield select(state => state.governance)
-          const govDocs: GovDoc[] = result.praxis.outputs.filter((o) => o.tags.includes('gov')).map((o) => o.data)
+          const govDocs = result.praxis.outputs.filter((o) => o.tags.includes('gov')).map((o) => {
+            const ret: [OutputJson, GovDoc] = [o, o.data as GovDoc]
+            return ret
+          })
           const govs = governance.govs.map((gov) => {
-            const doc = govDocs.find((doc) => doc.id === gov.id)
+            const doc = govDocs.find((doc) => doc[1].id === gov.id)
             return doc ? {
               ...gov,
-              ...doc,
+              ...doc[1],
+              output: doc[0],
             } : gov
           })
           govDocs.forEach((doc) => {
-            const gov = govs.find((gov) => doc.id === gov.id)
+            const gov = govs.find((gov) => doc[1].id === gov.id)
             if (!gov) {
-              govs.push(toGov(doc))
+              govs.push({...toGov(doc[1]), output: doc[0]})
             }
           })
+          for (const gov of govs) {
+            if (!gov.contractHash) {
+              const payload: GetContractFromActionPayload = {
+                hash: gov.output!.actionHash,
+              }
+              yield put(createAction('startSpinner'))
+              const praxisResult: IPraxisResult = yield call(txContractFromAction, payload, current)
+              yield put(createAction('stopSpinner'))
+              const result: ContractResult = praxisResult.transactionResult.result
+              gov.contractHash = hashJson(result.contract)
+            }
+          }
           console.log('refreshGovs', govs)
           yield put(createActionObject('setGovs', { govs }))
         } else {
@@ -424,9 +483,10 @@ const model: Model = {
 
     *refreshOrgs({ payload: { } }, { select, call, put } ) {
       try {
+        console.log('refreshOrgs model')
         const ledger: LedgerModel = yield select(state => state.ledger)
         const current = getLedger(ledger)
-        if (!(yield call(ledgerReady, current, 'refreshTab'))) { return }
+        if (!(yield call(ledgerReady, current, 'refreshOrgs'))) { return }
         const governance: GovernanceModel = yield select(state => state.governance)
         const gov = getGov(governance)
         if (!gov) {
@@ -546,21 +606,26 @@ async function saveGov(gov: Gov, ledger: Ledger, governance: GovernanceModel) {
   return result
 }
 
-async function saveOrg(gov: Gov, ledger: Ledger, org: Org, governance: GovernanceModel) {
-  gov.owner = ledger.ledger
+async function createOrg(gov: Gov, org: OrgForm, ledger: Ledger, fee: OutputJson) {
+  console.log('createOrg', org)
   const action: ActionJson = {
     ...getAction(ledger, 'createOrg', org),
     contractHash: gov.contractHash,
   }
-
+  const inputs = [inputFromOutput(fee)]
+  const signatures = signInputs(inputs, ledger)
+  action.inputs = inputs
+  action.signatures = signatures
   const payload: ContractActionPayload = {
     action,
   }
 
-  return await txContractAction(payload, ledger)
+  const result = await txContractAction(payload, ledger)
+  return success(result) ? (result.praxis.instances[0].action as any).state.org : undefined
 }
 
 async function list(reducer: string, gov: Gov, ledger: Ledger) {
+  console.log(reducer, gov)
   const action: ActionJson = {
     ...getAction(ledger, reducer, { max: 100}),
     contractHash: gov.contractHash,

@@ -17,21 +17,21 @@ interface VoteProposalFormCreateProps {
   governance: GovernanceModel
 }
 
-function toVoteProposalForm(obj: any): VoteProposalForm {
+function toVoteProposalForm(formData): VoteProposalForm {
   return {
-    name: obj.name,
-    title: obj.title,
-    subtitle: obj.subtitle,
-    description: obj.description,
-    orgId: obj.orgId,
-    proposalId: obj.proposalId,
-    minVoters: obj.minVoters,
-    maxVoters: obj.maxVoters,
-    stake: obj.stake,
-    winPercent: obj.winPercent,
-    voteStart: obj.voteStart,
-    voteEnd: obj.voteEnd,
-    voteType: obj.voteType,
+    name: formData.name,
+    title: formData.title,
+    subtitle: formData.subtitle,
+    description: formData.description,
+    orgId: formData.orgId,
+    proposalId: formData.proposalId,
+    minVoters: formData.minVoters,
+    maxVoters: formData.maxVoters,
+    stake: formData.stake,
+    winPercent: formData.winPercent,
+    voteStart: formData.voteStart,
+    voteEnd: formData.voteEnd,
+    voteType: formData.voteType,
   }
 }
 

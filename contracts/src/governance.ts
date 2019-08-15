@@ -63,7 +63,7 @@ export const start =
       'description': $form.description,
       'msgs': ['gov started']
     },
-    'gov': $doc
+    '_ephemeral': $doc
   };
   $retstate := $merge([$state, $newstate]);
   $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', ['gov'], $doc);
@@ -100,7 +100,7 @@ export const createOrg =
   };
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
-  $retstate := $merge([$state, { 'orgs': $idx + 1, 'org': $doc }]);
+  $retstate := $merge([$state, { 'orgs': $idx + 1, '_ephemeral': $doc }]);
   $out := $x.output($action.ledger, [], $form.title, $form.subtitle, 'Send this output to the contract to interact with it', $action.tags, $doc);
   $x.result($retstate, [$out])
 )
@@ -126,7 +126,7 @@ export const createProposal =
   };
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
-  $retstate := $merge([$state, { 'proposals': $idx + 1, 'proposal': $doc }]);
+  $retstate := $merge([$state, { 'proposals': $idx + 1, '_ephemeral': $doc }]);
   $out := $x.output($action.ledger, [], $form.title, $form.subtitle, '', $action.tags, $doc);
   $x.result($retstate, [$out])
 )
@@ -179,7 +179,7 @@ export const createVoteProposal =
   };
   $addDocumentToSpaceThenCommit($state.space, $doc);
 
-  $retstate := $merge([$state, { 'votes': $idx + 1, 'voteProposal': $doc }]);
+  $retstate := $merge([$state, { 'votes': $idx + 1, '_ephemeral': $doc }]);
   $out := $x.output($action.ledger, [], $form.title, $form.subtitle, '', $action.tags, $doc);
   $x.result($retstate, [$out])
 )
@@ -218,7 +218,7 @@ export const joinOrg =
   /* mint my vote tokens */
   $tokens := $x.toCoinUnit($org.joinTokens, $org.decimals);
   $mint := $x.mint($action.ledger, $org.symbol, $tokens, $org.decimals, $form.title, $form.subtitle, '', $action.tags, $doc);
-  $retstate := $merge([$state, { 'members': $idx + 1, 'member': $doc }]);
+  $retstate := $merge([$state, { 'members': $idx + 1, '_ephemeral': $doc }]);
   $x.result($retstate, [], [$mint])
 )
 `
@@ -344,7 +344,7 @@ export const listOrgs =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $newstate := $merge([$state, {'orgs': $find.hit.hits}])
+  $newstate := $merge([$state, {'_ephemeral': $find.hits.hits}]);
   $x.result($newstate, [])
 )
 `
@@ -366,7 +366,7 @@ export const listProposals =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max }]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $newstate := $merge([$state, {'proposals': $find.hit.hits}])
+  $newstate := $merge([$state, {'_ephermeral': $find.hits.hits}]);
   $x.result($newstate, [])
 )
 `
@@ -397,7 +397,7 @@ export const listVoteProposals =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max}]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $newstate := $merge([$state, {'voteProposals': $find.hit.hits}])
+  $newstate := $merge([$state, {'_ephemeral': $find.hits.hits}]);
   $x.result($newstate, [])
 )
 `

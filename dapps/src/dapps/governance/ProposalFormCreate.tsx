@@ -17,12 +17,12 @@ interface ProposalFormCreateProps {
   governance: GovernanceModel
 }
 
-function toProposalForm(obj: any): ProposalForm {
+function toProposalForm({formData}): ProposalForm {
   return {
-    name: obj.name,
-    title: obj.title,
-    subtitle: obj.subtitle,
-    description: obj.description,
+    name: formData.name,
+    title: formData.title,
+    subtitle: formData.subtitle,
+    description: formData.description,
   }
 }
 

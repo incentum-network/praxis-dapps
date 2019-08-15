@@ -173,7 +173,7 @@ describe('governance e2e', async () => {
       const createVoteFee = x.toCoinUnit(form.createVoteFee, 8)
       const createProposalFee = x.toCoinUnit(form.createProposalFee, 8)
 
-      createState = omit((ret.action as any).state.state, '_stateSpace')
+      createState = omit((ret.action as any).state.state, ['_stateSpace', '_ephemeral'])
       const should: GovState = {
         id: startContractKey,
         orgs: 0,
@@ -224,7 +224,7 @@ describe('governance e2e', async () => {
       action.inputs = [input]
       action.signatures = signInputs([input], { ledger, mnemonic: seed0})
       const result = await contractAction(action, timestamp)
-      orgState = omit((result.action as any).state.state, '_stateSpace')
+      orgState = omit((result.action as any).state.state, ['_stateSpace', '_ephemeral'])
 
       const x = setExtensions(contractHash, result.contract.key, [context], timestamp)
       const idx = 0
@@ -286,7 +286,7 @@ describe('governance e2e', async () => {
       action.inputs = [fee]
       action.signatures = signInputs([fee], { ledger, mnemonic: seed0})
       const result = await contractAction(action, timestamp)
-      proposalState = omit((result.action as any).state.state, '_stateSpace')
+      proposalState = omit((result.action as any).state.state, ['_stateSpace', '_ephemeral'])
 
       const x = setExtensions(contractHash, result.contract.key, [context], timestamp)
       const idx = 0
@@ -353,7 +353,7 @@ describe('governance e2e', async () => {
       action.inputs = [input]
       action.signatures = signInputs([input], { ledger, mnemonic: seed0})
       const result = await contractAction(action, timestamp)
-      voteState = omit((result.action as any).state.state, '_stateSpace')
+      voteState = omit((result.action as any).state.state, ['_stateSpace', '_ephemeral'])
 
       const x = setExtensions(contractHash, result.contract.key, [context], timestamp)
       const idx = 0
@@ -420,7 +420,7 @@ describe('governance e2e', async () => {
       action.inputs = [input]
       action.signatures = signInputs([input], { ledger, mnemonic: seed0})
       const result = await contractAction(action, timestamp)
-      memberState = omit((result.action as any).state.state, '_stateSpace')
+      memberState = omit((result.action as any).state.state, ['_stateSpace', '_ephemeral'])
 
       const x = setExtensions(contractHash, result.contract.key, [context], timestamp)
       const idx = 0
@@ -472,7 +472,7 @@ describe('governance e2e', async () => {
       action.inputs = inputs
       action.signatures = signInputs(inputs, { ledger, mnemonic: seed0})
       const result = await contractAction(action, timestamp)
-      voteState = omit((result.action as any).state.state, '_stateSpace')
+      voteState = omit((result.action as any).state.state, ['_stateSpace', '_ephemeral'])
 
       const queryText = `govId:"${startContractKey}" voteProposalId:"${voteProposalId}" docType:"${DocTypes.Vote}"`
       const query = {
@@ -530,7 +530,7 @@ describe('governance e2e', async () => {
       try {
         // should fail
         const result = await contractAction(action, timestamp)
-        voteState = omit((result.action as any).state.state, '_stateSpace')
+        voteState = omit((result.action as any).state.state, ['_stateSpace', '_ephemeral'])
         expect(true).toEqual(false)
       } catch (e) {
       }
@@ -609,12 +609,10 @@ describe('governance e2e', async () => {
       }
       const action = createAction(ledger, contractHash, 'listOrgs', form);
       const result = await contractAction(action, timestamp)
+      const orgs = (result.action as any).state.state._ephemeral
 
-      const outputs = await getUnusedOutputs({ledger})
-      const resout = outputs.outputs.find((o) => o.title === form.title)
-      expect(resout).toBeTruthy()
-      expect(resout.data.length).toEqual(1)
-      expect(resout.data[0].fields.title).toEqual('create org title')
+      expect(orgs.length).toEqual(1)
+      expect(orgs[0].fields.title).toEqual('create org title')
 
     } catch (e) {
       console.log('error in contract e2e', e)
