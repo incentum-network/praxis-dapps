@@ -32,6 +32,7 @@ export const start =
     'title': $form.title,
     'subtitle': $form.subtitle,
     'description': $form.description,
+    'hash': $x.contractHash,
 
     'name': $form.name,
     'owner': $action.ledger,
@@ -366,7 +367,7 @@ export const listProposals =
   $find := $searchSpace($state.space, $merge([$q, { 'topHits': $form.max }]));
   $x.assert.isNotOk($find.error, 'search failed ' & $errorMessage($find));
 
-  $newstate := $merge([$state, {'_ephermeral': $find.hits.hits}]);
+  $newstate := $merge([$state, {'_ephemeral': $find.hits.hits}]);
   $x.result($newstate, [])
 )
 `

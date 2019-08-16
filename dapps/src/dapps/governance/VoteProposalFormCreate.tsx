@@ -45,8 +45,6 @@ class _VoteProposalFormCreate extends React.PureComponent<VoteProposalFormCreate
       'title',
       'subtitle',
       'description',
-      'orgId',
-      'proposalId',
       'minVoters',
       'maxVoters',
       'stake',
@@ -67,6 +65,38 @@ class _VoteProposalFormCreate extends React.PureComponent<VoteProposalFormCreate
       subtitle: {
         type: 'string',
         title: 'Subtitle',
+      },
+      minVoters: {
+        type: 'integer',
+        title: 'Min Voters',
+      },
+      maxVoters: {
+        type: 'integer',
+        title: 'Max Voters',
+      },
+      stake: {
+        type: 'integer',
+        title: 'Stake in PRAX',
+      },
+      winPercent: {
+        type: 'integer',
+        title: 'Win Percent of Stake Returned',
+      },
+      voteStart: {
+        type: 'string',
+        title: 'Vote Start Date',
+      },
+      voteEnd: {
+        type: 'string',
+        title: 'Vote End Date',
+      },
+      voteType: {
+        type: 'string',
+        title: 'Vote Type',
+        enum: [
+          'majority',
+          'quadratic',
+        ],
       },
       description: {
         type: 'string',
@@ -128,12 +158,12 @@ class _VoteProposalFormCreate extends React.PureComponent<VoteProposalFormCreate
               id="governance-vote-proposal-form"
               idPrefix="gov"
               formContext={{}}
-              formData={getVoteProposal(governance)}
+              formData={{}}
               schema={this.jsonSchemaObject}
-              onSubmit={org => {
+              onSubmit={voteProposal => {
                 dispatch(
                   createActionObject('governance/saveVoteProposal', {
-                    gov: toVoteProposalForm(org),
+                    voteProposal: toVoteProposalForm(voteProposal),
                     history,
                   })
                 )

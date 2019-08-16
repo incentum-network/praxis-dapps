@@ -18,6 +18,7 @@ export interface GovDoc extends GovCommon {
   id: string
   docType: string
   owner: string
+  hash: string
   contractHash: string
 }
 
@@ -195,6 +196,7 @@ export const fields =
   'createOrgFee': $x.fields.longField,
   'createProposalFee': $x.fields.longField,
   'createVoteFee': $x.fields.longField,
+  'hash': $x.fields.keywordField,
 
   /* org document */
   'symbol': $x.fields.keywordField,

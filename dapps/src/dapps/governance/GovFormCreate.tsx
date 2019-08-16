@@ -99,7 +99,7 @@ class _GovFormCreate extends React.PureComponent<GovFormCreateProps> {
 
     return (
       <Screen
-        title={'Governmant'}
+        title={'Government'}
         left={cancelButton(async () => {
           await this.exit()
         })}

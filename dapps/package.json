@@ -8,6 +8,7 @@
     "@incentum/praxis-client": "^0.0.33",
     "@incentum/praxis-contracts": "^1.0.360",
     "@incentum/praxis-interfaces": "^1.0.352",
+    "@incentum/praxis-spaces": "^1.0.368",
     "@react-navigation/core": "^3.0.3",
     "@react-navigation/web": "^1.0.0-alpha.7",
     "@svgr/webpack": "2.4.1",

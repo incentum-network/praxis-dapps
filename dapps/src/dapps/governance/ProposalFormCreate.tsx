@@ -110,12 +110,12 @@ class _ProposalFormCreate extends React.PureComponent<ProposalFormCreateProps> {
               id="governance-gov-form"
               idPrefix="gov"
               formContext={{}}
-              formData={getGov(governance)}
+              formData={{}}
               schema={this.jsonSchemaObject}
-              onSubmit={org => {
+              onSubmit={proposal => {
                 dispatch(
                   createActionObject('governance/saveProposal', {
-                    gov: toProposalForm(org),
+                    proposal: toProposalForm(proposal),
                     history,
                   })
                 )

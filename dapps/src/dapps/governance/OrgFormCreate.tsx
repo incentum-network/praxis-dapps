@@ -133,7 +133,7 @@ class _OrgFormCreate extends React.PureComponent<OrgFormCreateProps> {
               id="governance-org-form"
               idPrefix="gov"
               formContext={{}}
-              formData={getOrg(governance)}
+              formData={{}}
               schema={this.jsonSchemaObject}
               onSubmit={org => {
                 dispatch(
