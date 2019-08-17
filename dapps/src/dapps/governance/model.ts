@@ -494,6 +494,34 @@ const model: Model = {
       }
     },
 
+    *joinOrg({ payload: { org, history } }, { select, call, put }) {
+      try {
+        const ledger: LedgerModel = yield select(state => state.ledger)
+        const governance: GovernanceModel = yield select(state => state.governance)
+        const gov = getGov(governance)
+        const current = getLedger(ledger)
+        if (!gov || (!(yield call(ledgerReady, current, 'joinOrgFee')))) {
+          yield put(createActionObject('showAlert', { title: 'Join Org Failed', msg: `Please select a gov and ledger` }))
+        } else {
+          const amount = `${Number(org.joinOrgFee) * 1e8}`
+          const payload: AccountToOutputPayload = { amount }
+          const a2o: IPraxisResult = yield call(txAccountToOutput, payload, current)
+          const joinOrgFee = a2o.praxis.outputs.find((o) => o.title === 'PRAX tokens from wallet' && o.coins[0].amount === amount)
+          if (!(yield call(ledgerReady, current, 'joinOrg'))) { return }
+          const member: Member = yield call(joinOrg, gov, current, joinOrgFee)
+          if (member) {
+            yield put(createActionObject('orgJoined', { member }))
+          } else {
+            yield put(createActionObject('showAlert', { title: 'Join Org Failed', msg: `Join Org failed` }))
+          }
+        }
+        setTimeout(() => history.goBack(), 1000)
+      } catch (e) {
+        console.log('joinOrg', e)
+        Alert.alert('Join Org Failed', e.toString())
+      }
+    },
+
     *saveGov({ payload: { gov, history, ledger } }, { select, call, put }) {
       try {
         const ledger: LedgerModel = yield select(state => state.ledger)
@@ -747,6 +775,24 @@ async function list<T>(reducer: string, gov: Gov, ledger: Ledger): Promise<T | u
   }
   const result = await txContractAction(payload, ledger)
   console.log(reducer, result)
+  return success(result) ? getEphemeral(result) : undefined
+}
+
+async function joinOrg(gov: Gov, ledger: Ledger, joinOrgFee: OutputJson): Promise<Member | undefined> {
+  console.log('joinOrg', gov)
+  const action: ActionJson = {
+    ...getAction(ledger, 'joinOrg', {}),
+    contractHash: gov.contractHash,
+  }
+  const inputs = [inputFromOutput(joinOrgFee)]
+  const signatures = signInputs(inputs, ledger)
+  action.inputs = inputs
+  action.signatures = signatures
+  const payload: ContractActionPayload = {
+    action,
+  }
+  const result = await txContractAction(payload, ledger)
+  console.log('joinOrg', result)
   return success(result) ? getEphemeral(result) : undefined
 }
 

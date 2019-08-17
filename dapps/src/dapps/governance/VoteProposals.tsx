@@ -42,13 +42,13 @@ const VoteProposalDetails = (props) => {
             <TouchableOpacity
               onPress={() =>
                 dispatch(
-                  createActionObject('governance/register', {})
+                  createActionObject('governance/vote', {})
                 )
               }
             >
               <View style={{ height: 40, justifyContent: 'center', marginRight: 10 }}>
                 <Ionicons
-                  name="ios-person"
+                  name="ios-trophy"
                   color={incentumYellow}
                   size={40}
                 />
