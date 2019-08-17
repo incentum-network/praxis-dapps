@@ -17,7 +17,7 @@ interface VoteProposalFormCreateProps {
   governance: GovernanceModel
 }
 
-function toVoteProposalForm(formData): VoteProposalForm {
+function toVoteProposalForm({formData}): VoteProposalForm {
   return {
     name: formData.name,
     title: formData.title,

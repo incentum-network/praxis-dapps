@@ -4,8 +4,8 @@
   "private": true,
   "dependencies": {
     "@babel/core": "7.1.6",
-    "@incentum/crypto": "^2.4.3",
-    "@incentum/praxis-client": "^0.0.33",
+    "@incentum/crypto": "^2.4.4",
+    "@incentum/praxis-client": "^0.0.34",
     "@incentum/praxis-contracts": "^1.0.360",
     "@incentum/praxis-interfaces": "^1.0.352",
     "@incentum/praxis-spaces": "^1.0.368",

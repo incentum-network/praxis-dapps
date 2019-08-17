@@ -105,7 +105,7 @@ class _VoteProposals extends React.PureComponent<VoteProposalProps> {
         transition="backgroundColor"
       >
         <Animatable.View duration={400} animation={isActive ? 'slideInDown' : undefined}>
-          <VoteProposalDetails proposal={vote} {...this.props} />
+          <VoteProposalDetails vote={vote} {...this.props} />
         </Animatable.View>
       </Animatable.View>
     )

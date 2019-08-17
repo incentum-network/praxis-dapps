@@ -40,10 +40,10 @@
   },
   "dependencies": {
     "@arkecosystem/client": "^1.0.1",
-    "@incentum/crypto": "^2.4.3",
-    "@incentum/praxis-client": "^0.0.33",
+    "@incentum/crypto": "^2.4.4",
+    "@incentum/praxis-client": "^0.0.34",
     "@incentum/praxis-contracts": "^1.0.360",
-    "@incentum/praxis-db": "^1.0.404",
+    "@incentum/praxis-db": "^1.0.406",
     "@incentum/praxis-interfaces": "^1.0.352",
     "@incentum/praxis-spaces": "^1.0.368",
     "@types/lodash": "^4.14.113",

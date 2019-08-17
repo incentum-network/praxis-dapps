@@ -1,7 +1,7 @@
 import { createActionObject, createAction } from '../../utils'
 import { Model } from 'dva'
 import { OrgDoc, GovDoc, ProposalDoc, MemberDoc, VoteProposalDoc, OrgForm, ProposalForm, VoteProposalForm } from '../../shared/governance'
-import { Alert } from 'react-native'
+import { Alert } from 'react-native-web-extended'
 import { getLedger, LedgerModel, Ledger, ledgerReady, getUnusedOutputs } from '../../models/ledger'
 import {
   IPraxisResult,
@@ -479,9 +479,12 @@ const model: Model = {
           if (!(yield call(ledgerReady, current, 'createVoteProposal'))) { return }
           voteProposal.orgId = org.id
           voteProposal.proposalId = proposal.id
+          console.log('voteProposal form', voteProposal)
           const created: VoteProposal = yield call(createVoteProposal, gov, voteProposal, current, createVoteFee)
           if (created) {
             yield put(createActionObject('addVoteProposal', { voteProposal: created }))
+          } else {
+            yield put(createActionObject('showAlert', { title: 'Save Vote Proposal Failed', msg: `Save Vote Proposal failed` }))
           }
         }
         setTimeout(() => history.goBack(), 1000)
@@ -593,7 +596,7 @@ const model: Model = {
             console.log('refreshOrgs', orgs)
             yield put(createActionObject('setOrgs', { orgs }))
           } else {
-            yield put(createActionObject('showAlert', { title: 'Refresh Orgs', msg: 'Refresh Orgs failed' }))
+            yield put(createActionObject('showAlert', { title: 'Refresh Orgs', msg: 'No orgs found' }))
           }
           }
       } catch (e) {
@@ -635,6 +638,7 @@ const model: Model = {
 
     *refreshVoteProposals({ payload: { } }, { select, call, put } ) {
       try {
+        console.log('refreshVoteProposals')
         const ledger: LedgerModel = yield select(state => state.ledger)
         const current = getLedger(ledger)
         if (!(yield call(ledgerReady, current, 'refreshVoteProposals'))) { return }
@@ -644,17 +648,15 @@ const model: Model = {
           yield put(createActionObject('showAlert', { title: 'Refresh Vote Proposals', msg: 'Please select a gov' }))
         } else {
           yield put(createAction('startSpinner'))
-          const result: IPraxisResult = yield call(list, 'listVoteProposals', gov, current)
+          const hits: Hit[] = yield call(list, 'listVoteProposals', gov, current)
           yield put(createAction('stopSpinner'))
-          console.log('refreshVoteProposals', result)
-          if (success(result)) {
-            const contractResult: ContractResult = result.praxis.instances[0]
-            const docs: VoteProposalDoc[] = (contractResult.action as any).state.orgs
-            const voteProposals = mergeDocs(gov.voteProposals, docs, toVoteProposal)
+          if (hits) {
+            const voteProposalDocs: VoteProposalDoc[] = hits.map((h) => h.fields as VoteProposalDoc)
+            const voteProposals = mergeDocs(gov.voteProposals, voteProposalDocs, toVoteProposal)
             console.log('refreshVoteProposals', voteProposals)
             yield put(createActionObject('setVoteProposals', { voteProposals }))
           } else {
-            yield put(createActionObject('showAlert', { title: 'Refresh Vote Proposals', msg: statusMessage(result) }))
+            yield put(createActionObject('showAlert', { title: 'Refresh Vote Proposals', msg: 'Refresh Proposals failed' }))
           }
           }
       } catch (e) {
@@ -699,19 +701,22 @@ async function saveGov(gov: Gov, ledger: Ledger, governance: GovernanceModel) {
   return result
 }
 
-async function createOrg(gov: Gov, org: OrgForm, ledger: Ledger, fee: OutputJson): Promise<Org | undefined> {
+async function createOrg(gov: Gov, form: OrgForm, ledger: Ledger, fee: OutputJson): Promise<Org | undefined> {
+  const org = await create<OrgDoc>(gov, 'createOrg', form, ledger, fee)
   console.log('createOrg', org)
-  return await create<Org>(gov, 'createOrg', org, ledger, fee)
+  return org ? toOrg(org) : undefined
 }
 
-async function createProposal(gov: Gov, proposal: ProposalForm, ledger: Ledger, fee: OutputJson): Promise<Proposal | undefined> {
+async function createProposal(gov: Gov, form: ProposalForm, ledger: Ledger, fee: OutputJson): Promise<Proposal | undefined> {
+  const proposal = await create<Proposal>(gov, 'createProposal', form, ledger, fee)
   console.log('createProposal', proposal)
-  return await create<Proposal>(gov, 'createProposal', proposal, ledger, fee)
+  return proposal ? toProposal(proposal) : undefined
 }
 
-async function createVoteProposal(gov: Gov, voteProposal: VoteProposalForm, ledger: Ledger, fee: OutputJson): Promise<VoteProposal | undefined> {
+async function createVoteProposal(gov: Gov, form: VoteProposalForm, ledger: Ledger, fee: OutputJson): Promise<VoteProposal | undefined> {
+  const voteProposal = await create<VoteProposal>(gov, 'createVoteProposal', form, ledger, fee)
   console.log('createVoteProposal', voteProposal)
-  return await create<VoteProposal>(gov, 'createVoteProposal', voteProposal, ledger, fee)
+  return voteProposal ? toVoteProposal(voteProposal) : undefined
 }
 
 async function create<T>(gov: Gov, reducer: string, form: any, ledger: Ledger, fee: OutputJson): Promise<T | undefined> {
@@ -727,6 +732,7 @@ async function create<T>(gov: Gov, reducer: string, form: any, ledger: Ledger, f
     action,
   }
   const result = await txContractAction(payload, ledger)
+  console.log('create', result)
   return success(result) ? getEphemeral(result) : undefined
 }
 
