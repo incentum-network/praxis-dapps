@@ -26,6 +26,7 @@ import OrgFormCreate from './dapps/governance/OrgFormCreate'
 import GovFormCreate from './dapps/governance/GovFormCreate'
 import ProposalFormCreate from './dapps/governance/ProposalFormCreate'
 import VoteProposalFormCreate from './dapps/governance/VoteProposalFormCreate'
+import VoteForm from './dapps/governance/VoteForm'
 
 const RouteContainer = posed.div({
   enter: { opacity: 1, delay: 300, beforeChildren: true },
@@ -56,6 +57,7 @@ app.router((api) =>
               <Route exact path="/templateSearchInfo" component={TemplateSearchInfoScreen} key="templateSearchInfo-app-key" />
               <Route exact path="/templateSearch" component={TemplateSearchScreen} key="templateSearch-app-key" />
               <Route exact path="/contractSearch" component={ContractSearchScreen} key="contractSearch-app-key" />
+              <Route exact path="/voteForm" component={VoteForm} key="voteForm-app-key" />
               <Route exact path="/orgForm" component={OrgFormCreate} key="orgForm-app-key" />
               <Route exact path="/govForm" component={GovFormCreate} key="govForm-app-key" />
               <Route exact path="/voteProposalForm" component={VoteProposalFormCreate} key="voteForm-app-key" />

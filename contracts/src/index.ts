@@ -82,7 +82,7 @@ switch (argv.template) {
 
 template.versionMajor = argv.versionMajor ? argv.versionMajor : 1
 template.versionMinor = argv.versionMinor ? argv.versionMinor : 0
-template.versionPatch = argv.versionPatch ? argv.versionPatch : 6
+template.versionPatch = argv.versionPatch ? argv.versionPatch : 8
 
 console.log('ledger', ledger);
 console.log('template', `${template.name} ${template.versionMajor}.${template.versionMinor}.${template.versionPatch}`)

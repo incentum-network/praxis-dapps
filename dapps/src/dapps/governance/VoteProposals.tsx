@@ -11,20 +11,19 @@ import {
   thirdBaseColor,
   incentumYellow,
   secondBaseColor,
-  tabColor,
   markdownBackground,
   baseColor
 } from '../../constants/Colors'
 import Markdown from 'react-markdown'
 
 import { createActionObject, ScreenWidth, isMobileDevice } from '../../utils'
-import { GovernanceModel, VoteProposal, getMember, getVoteProposals, getOrgs, getProposals, getGov, getOrgIdx, getProposalIdx } from './model'
+import { GovernanceModel, VoteProposal, getVoteProposals, getOrgs, getProposals, getOrgIdx, getProposalIdx } from './model'
 import * as Animatable from 'react-native-animatable'
 import Accordion from 'react-native-collapsible/Accordion'
 import { Ionicons } from 'react-web-vector-icons'
 
 const VoteProposalDetails = (props) => {
-  const { vote, dispatch, ledger }: { vote: VoteProposal, dispatch: any, ledger: LedgerModel} = props
+  const { voteProposal, ledger, history }: { voteProposal: VoteProposal, ledger: LedgerModel, history: any} = props
   const current = getLedger(ledger)
   return (
     <View style={styles.content}>
@@ -32,19 +31,15 @@ const VoteProposalDetails = (props) => {
         <View style={styles.row}>
           <View style={[styles.col, { padding: 10 }]}>
             <View style={styles.row}>
-              <Text style={styles.textLeft}>{`Registration Stake`}</Text>
-              <Text style={styles.text}>{`${vote.stake} PRAX`}</Text>
+              <Text style={styles.textLeft}>{`Voting Stake`}</Text>
+              <Text style={styles.text}>{`${voteProposal.stake} PRAX`}</Text>
             </View>
             <View style={styles.row}>
             </View>
           </View>
           <View style={[styles.right, { justifyContent: 'center' }]}>
             <TouchableOpacity
-              onPress={() =>
-                dispatch(
-                  createActionObject('governance/vote', {})
-                )
-              }
+              onPress={() => setTimeout(() => history.push('/voteForm', { voteProposal }), 500)}
             >
               <View style={{ height: 40, justifyContent: 'center', marginRight: 10 }}>
                 <Ionicons
@@ -58,7 +53,7 @@ const VoteProposalDetails = (props) => {
         </View>
         <View style={styles.row}>
           <View style={styles.markdown}>
-            <Markdown source={vote.description} />
+            <Markdown source={voteProposal.description} />
           </View>
         </View>
       </View>
@@ -105,7 +100,7 @@ class _VoteProposals extends React.PureComponent<VoteProposalProps> {
         transition="backgroundColor"
       >
         <Animatable.View duration={400} animation={isActive ? 'slideInDown' : undefined}>
-          <VoteProposalDetails vote={vote} {...this.props} />
+          <VoteProposalDetails voteProposal={vote} {...this.props} />
         </Animatable.View>
       </Animatable.View>
     )

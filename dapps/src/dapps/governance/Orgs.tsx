@@ -17,15 +17,15 @@ import {
 import Markdown from 'react-markdown'
 
 import { createActionObject, ScreenWidth, isMobileDevice } from '../../utils'
-import { GovernanceModel, Org, getMember, getOrgs } from './model'
+import { GovernanceModel, Org, getMember, getOrgs, isMember, getGov } from './model'
 import * as Animatable from 'react-native-animatable'
 import Accordion from 'react-native-collapsible/Accordion'
 import { Ionicons } from 'react-web-vector-icons'
 
 const OrgDetails = (props) => {
-  const { org, dispatch, ledger }: { org: Org, dispatch: any, ledger: LedgerModel} = props
+  const { org, governance, dispatch, ledger }: { org: Org, governance: GovernanceModel, dispatch: any, ledger: LedgerModel} = props
   const current = getLedger(ledger)
-  const member = current && getMember(current.ledger, org)
+  const member = current && isMember(current, getGov(governance)!, org)
   return (
     <View style={styles.content}>
     <View style={styles.col}>
@@ -119,6 +119,7 @@ class _Orgs extends React.PureComponent<OrgsProps> {
   }
 
   public renderContent(org: Org, _, isActive) {
+    const { governance } = this.props
     return (
       <Animatable.View
         duration={400}
@@ -126,7 +127,7 @@ class _Orgs extends React.PureComponent<OrgsProps> {
         transition="backgroundColor"
       >
         <Animatable.View duration={400} animation={isActive ? 'slideInDown' : undefined}>
-          <OrgDetails org={org} {...this.props} />
+          <OrgDetails org={org} governance={governance} {...this.props} />
         </Animatable.View>
       </Animatable.View>
     )

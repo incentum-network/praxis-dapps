@@ -201,6 +201,13 @@ export const joinOrg =
   $joinFeeCoin := $x.coin.prax($joinFee);
   $inputMustBe($inputs[0], $joinFeeCoin);
 
+  /* make sure not joined */
+  $queryMember := ['govId', $x.contractKey, 'owner', $action.ledger, 'docType', '${DocTypes.Member}'];
+  $qMember := $query($queryMember, ['id']);
+  $member := $searchSpace($state.space, $qMember);
+  $x.assert.isNotOk($member.error, 'search failed ' & $errorMessage($member));
+  $x.assert.equal($member.hits.totalHits, 0, 'you are already a member');
+
   /* add member */
   $idx := $state.members;
   $id := $org.id & '/member/' & $idx;
@@ -239,13 +246,13 @@ export const vote =
 
   /* find org */
   $orgText := ['govId', $x.contractKey, 'id', $voteProposal.orgId, 'docType', '${DocTypes.Org}'];
-  $q := $query($orgText, ['id', 'decimals', 'symbol']);
-  $org := $searchSpace($state.space, $q) ~> $getSingleHit('org');
+  $qOrg := $query($orgText, ['id', 'decimals', 'symbol']);
+  $org := $searchSpace($state.space, $qOrg) ~> $getSingleHit('org');
 
   /* find member */
   $memberText := ['govId', $x.contractKey, 'orgId', $org.id, 'docType', '${DocTypes.Member}', 'owner', $action.ledger];
-  $q := $query($memberText, ['id']);
-  $member := $searchSpace($state.space, $q) ~> $getSingleHit('member');
+  $qMember := $query($memberText, ['id']);
+  $member := $searchSpace($state.space, $qMember) ~> $getSingleHit('member');
 
   /* find voter */
   $votedText := ['govId', $x.contractKey, 'memberId', $member.id, 'docType', '${DocTypes.Vote}', 'voteProposalId', $voteProposal.id];

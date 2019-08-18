@@ -1,4 +1,4 @@
-import { CoinJson } from "@incentum/praxis-interfaces"
+import { CoinJson } from '@incentum/praxis-interfaces'
 
 export interface GovCommon {
   name: string
@@ -11,6 +11,7 @@ export interface GovCommon {
   createProposalFee: number
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface GovForm extends GovCommon {
 }
 
@@ -53,6 +54,7 @@ export interface OrgCommon {
   joinTokens: number
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface OrgForm extends OrgCommon {
 }
 
@@ -69,6 +71,7 @@ export interface ProposalCommon {
   description: string
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface ProposalForm extends ProposalCommon {
 }
 
@@ -123,6 +126,7 @@ export interface MemberCommon {
   orgId: string
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface MemberForm extends MemberCommon {
 }
 
@@ -139,6 +143,7 @@ export interface VoteCommon {
   vote: string
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface VoteForm extends VoteCommon {
 }
 
@@ -230,9 +235,9 @@ export const fields =
 
   /* vote document */
   'vote': {
-    'type': 'text', 
+    'type': 'text',
     'search': true,
-    'facet': 'flat', 
+    'facet': 'flat',
     'group': true,
     'store': true,
     'facetIndexFieldName': 'facet_vote'
