@@ -46,7 +46,7 @@
     "@incentum/praxis-interfaces": "^1.0.356",
     "@incentum/praxis-spaces": "^1.0.375",
     "@types/lodash": "^4.14.113",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "bignumber.js": "^8.1.1",
     "bytebuffer": "^5.0.1",
     "chai": "^4.2.0",
